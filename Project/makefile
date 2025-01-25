@@ -1,3 +1,4 @@
+# System variables
 IVERILOG = iverilog
 SIMULATOR = vvp
 
