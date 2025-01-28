@@ -18,26 +18,23 @@ module testbench_nShift;
     parameter WIDTH = 4;    // The number of bits for the input-output
     parameter BIT_STATE = 2 ** WIDTH;   // The total possible states for the given bit WIDTH
 
-    
     reg [ WIDTH-1:0 ] in;
-    reg shift_dir;
-    reg [ WIDTH-1:0 ] shift_amt;
-    wire [ WIDTH-1:0 ] out_logical, out_arithmetic;
+    reg [ WIDTH-1:0 ] shift;
+    wire [ WIDTH-1:0 ] out_logical, out_arithmetic, overflow_logical, overflow_arithmetic;
 
     // Logical shift right
-    nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) shift_logical(
+    New_nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) shift_logical(
         .in( in ),
-        .shift_dir( shift_dir ),
-        .shift_amt( shift_amt ),
-        .out( out_logical )
+        .shift( shift ),
+        .out( out_logical ),
+        .overflow( overflow_logical )
     );
 
-    // Arithmetic shift right
-    nBit_Shift #( .WIDTH( WIDTH ), .OP( 1 ) ) shift_arithmetic(
+    New_nBit_Shift #( .WIDTH( WIDTH ), .OP( 1 ) ) shift_arithmetic(
         .in( in ),
-        .shift_dir( shift_dir ),
-        .shift_amt( shift_amt ),
-        .out( out_arithmetic )
+        .shift( shift ),
+        .out( out_arithmetic ),
+        .overflow( overflow_arithmetic )
     );
 
     /*
@@ -46,45 +43,44 @@ module testbench_nShift;
      * for both logical and arithmetic shift operations
      */
     task test_nShift;
-    integer MAX_SHIFT;  // Maximum shift amount based on direction
-    begin
-        // Initialize inputs
-        shift_dir = 0;
-        in = { WIDTH{ 1'b0 } };
+        integer shift_dir, shift_amt, fill_bit, idx, MAX_SHIFT;
+        begin
+            // Initialize inputs
+            shift = { WIDTH{ 1'b0 } };
+            in = { WIDTH{ 1'b0 } };
 
-        // Iterate through shift directions
-        repeat ( 2 ) begin
-            // Determine maximum shift amount based on direction
-            if (shift_dir == 0)
-                MAX_SHIFT = WIDTH - 1;    // Left shift
-            else
-                MAX_SHIFT = (WIDTH / 2);  // Right shift
+            // Iterate through all shift directions
+            for( shift_dir = 0; shift_dir < 2; shift_dir = shift_dir + 1 ) begin
 
-            // Iterate through shift amounts
-            shift_amt = 1;
-            repeat ( MAX_SHIFT ) begin
-                // Initialize the input value
-                in = { WIDTH{ 1'b0 } };
-
-                // Iterate through all input values
-                repeat ( BIT_STATE ) begin
-                    #10;
-                    in = in + 1;
+                if( shift_dir == 0 ) begin
+                    MAX_SHIFT = ( WIDTH - 1 );
                 end
-                shift_amt = shift_amt + 1;
+                else begin
+                    MAX_SHIFT = ( WIDTH / 2 );
+                end
+                // Iterate through all shift amounts
+                for( shift_amt = 1; shift_amt <= MAX_SHIFT; shift_amt = shift_amt + 1 ) begin
+
+                    // Iterate through all fill bits
+                    for( fill_bit = 0; fill_bit < 2; fill_bit = fill_bit + 1 ) begin
+
+                        // Construct the shift
+                        shift[ WIDTH-1 ] = fill_bit; 
+                        shift[ WIDTH-2:1 ] = shift_amt; 
+                        shift[ 0 ] = shift_dir;
+
+                        // Iterate through all possible input states
+                        repeat( BIT_STATE ) begin
+                            in = in + 1;
+                            #10;
+                        end
+                    end
+                end
             end
-
-            // Switch to the next shift direction
-            shift_dir = shift_dir + 1;
         end
+    endtask
 
-        // Pull inputs low after all test cases are executed
-        in = { WIDTH{ 1'b0 } };
-        shift_dir = 0;
-        shift_amt = 0;
-        #10;
-    end
-endtask
+    
 
 
     initial begin

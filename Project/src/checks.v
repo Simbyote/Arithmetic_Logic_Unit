@@ -48,16 +48,16 @@ endmodule
  * - SET has a lower limit of 1 and an upper limit of 1000
  * - Includes a warning if SET exceeds 500
  */
-module Set_Check #( parameter SET = 1 );
+module Set_Check #( parameter SETS = 1 );
     initial begin
-        if( SET < 1 ) begin
-            $error( "Error: Invalid SET value (%0d). Must be greater than 0", SET );
+        if( SETS < 1 ) begin
+            $error( "Error: Invalid SET value (%0d). Must be greater than 0", SETS );
         end
-        else if( SET > 500 ) begin
-            $warning( "Warning: SET value (%0d) exceeds recommended limit (500)", SET );
+        else if( SETS > 500 ) begin
+            $warning( "Warning: SET value (%0d) exceeds recommended limit (500)", SETS );
         end
-        else if( SET > 1000 ) begin
-            $error( "Error: SET value (%0d) exceeds maximum limit (1000)", SET );
+        else if( SETS > 1000 ) begin
+            $error( "Error: SET value (%0d) exceeds maximum limit (1000)", SETS );
         end
     end
 endmodule

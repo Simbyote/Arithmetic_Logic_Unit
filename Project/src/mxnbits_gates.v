@@ -136,7 +136,7 @@ module NOT_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
     output wire [ SETS*WIDTH-1:0 ] out_packed
 );
     // Check for valid SET value
-    Set_Check #( .SET( SETS ) ) set_check ( );
+    Set_Check #( .SETS( SETS ) ) set_check ( );
 
     // Unpack, instantiate NOT operation (0), and pack the output
     UnpackPack_mXnbits #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 0 ) ) not_unpack_pack (
@@ -158,7 +158,7 @@ module AND_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
     output wire [ SETS*WIDTH-1:0 ] out_packed
 );
     // Check for valid SET value
-    Set_Check #( .SET( SETS ) ) set_check ( );
+    Set_Check #( .SETS( SETS ) ) set_check ( );
 
     // Unpack, instantiate AND operation (1), and pack the output
     UnpackPack_mXnbits #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 1 ) ) and_pack_unpack (
@@ -181,7 +181,7 @@ module OR_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
     output wire [ SETS*WIDTH-1:0 ] out_packed
 );
     // Check for valid SET value
-    Set_Check #( .SET( SETS ) ) set_check ( );
+    Set_Check #( .SETS( SETS ) ) set_check ( );
 
     // Unpack, instantiate OR operation (2), and pack the output
     UnpackPack_mXnbits #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 2 ) ) or_pack_unpack (
@@ -204,7 +204,7 @@ module NAND_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
     output wire [ SETS*WIDTH-1:0 ] out_packed
 );
     // Check for valid SET value
-    Set_Check #( .SET( SETS ) ) set_check ( );
+    Set_Check #( .SETS( SETS ) ) set_check ( );
 
     // Unpack, instantiate NAND operation (3), and pack the output
     UnpackPack_mXnbits #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 3 ) ) nand_pack_unpack (
@@ -227,7 +227,7 @@ module NOR_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
     output wire [ SETS*WIDTH-1:0 ] out_packed
 );
     // Check for valid SET value
-    Set_Check #( .SET( SETS ) ) set_check ( );
+    Set_Check #( .SETS( SETS ) ) set_check ( );
 
     // Unpack, instantiate NOR operation (4), and pack the output
     UnpackPack_mXnbits #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 4 ) ) nor_pack_unpack (
@@ -250,7 +250,7 @@ module XOR_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
     output wire [ SETS*WIDTH-1:0 ] out_packed
 );
     // Check for valid SET value
-    Set_Check #( .SET( SETS ) ) set_check ( );
+    Set_Check #( .SETS( SETS ) ) set_check ( );
 
     // Unpack, instantiate XOR operation (5), and pack the output
     UnpackPack_mXnbits #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 5 ) ) xor_pack_unpack (
@@ -273,7 +273,7 @@ module XNOR_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
     output wire [ SETS*WIDTH-1:0 ] out_packed
 );
     // Check for valid SET value
-    Set_Check #( .SET( SETS ) ) set_check ( );
+    Set_Check #( .SETS( SETS ) ) set_check ( );
 
     // Unpack, instantiate XNOR operation (6), and pack the output
     UnpackPack_mXnbits #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 6 ) ) xnor_pack_unpack (
