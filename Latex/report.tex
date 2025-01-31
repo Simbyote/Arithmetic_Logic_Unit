@@ -1,0 +1,344 @@
+\documentclass[12pt]{article}
+
+
+\usepackage{fancyhdr}   
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{graphicx}    % include graphics
+\usepackage{natbib}         
+\usepackage{doi}    
+\usepackage{listings}
+\usepackage{xcolor}
+\setcitestyle{aysep={,}}
+
+% Header information
+\newcommand{\Group}{Group Uno}
+\newcommand{\Mike}{Mike Orduna}
+\newcommand{\Noah}{Noah Murphy}
+\newcommand{\Alex}{Alex Livingston}
+\newcommand{\Class}{CS 3339: Computer Architecture}
+
+\newcommand{\ReportPart}{Part one}
+\title{Project Report: \ReportPart}
+
+\author{
+    \textbf{\Class} \\
+    \textbf{\Group:} 
+    \\
+    \Mike \\
+    \Noah \\
+    \Alex \\
+}
+\date{\today}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\begin{document}
+\maketitle
+
+\newpage
+\tableofcontents
+\thispagestyle{empty}
+\pagestyle{fancy}
+
+\newpage
+\setcounter{page}{1}
+\section{Introduction}
+The goal of this project is to explore the design and verification of fundamental digital circuits, focusing on constructing basic logic 
+gates and an arithmetic shifter. These circuits form the foundation for a larger Arithmetic Logic Unit (ALU), which will eventually perform 
+fundamental mathematical operations. To achieve this, we first implemented one-bit logic gates such as NOT, AND, and OR, adopting a modular
+and hierarchical approach to ensure scalability and reusability. After designing these components, we rigorously tested their functionality 
+using a dedicated testbench. Simulations were conducted to verify expected behavior, with results analyzed using the GTKWaveform tool. With 
+successful verification of our initial circuit designs, we have established a foundation for further development, including extending the 
+ALU’s functionality and optimizing its performance.
+
+\section{Design}
+Before constructing an Arithmetic Logic Unit, we first developed its fundamental components, beginning with basic logic gates. We 
+structured the project into modular stages, where each stage builds upon the previous one, forming a hierarchical design. Our first step was 
+to implement basic logic gates. These gates are essential in digital circuits and were implemented 
+using Boolean algebra principles to ensure reusability and consistency throughout the design.
+
+\subsection{Basic Logic Gates}
+Each gate plays a pivotal role in digital computation. The AND and OR gates facilitate logical decision-making, the NOT gate allows for signal 
+inversion, and the XOR gate is fundamental in arithmetic circuits, particularly in half-adders and full-adders, which are used for binary 
+addition. More complex gates, such as NAND and XNOR, were constructed by instantiating simpler gates, aligning with the modular approach we 
+outlined. Among these, the NAND and NOR gates are particularly significant, as they are functionally universal and can be used to construct any 
+other logic gate. This design choice streamlined the debugging process and provided a scalable framework for representing digital logic. 
+These gates establish a scalable foundation for implementing more advanced arithmetic and logic operations in future stages of the project.
+
+
+\section{Verilog Code}
+The Verilog code for part one of the project is organized into two files. The first file implements the basic logic gates:
+\begin{itemize}
+    \item \textbf{NOT} - Inverts the input signal.
+    \item \textbf{AND} - Outputs high if both inputs are high.
+    \item \textbf{OR} - Outputs high if either input is high.
+    \item \textbf{NAND} - Outputs low if both inputs are high.
+    \item \textbf{NOR} - Outputs low if either input is high.
+    \item \textbf{XOR} - Outputs high if the inputs differ.
+    \item \textbf{XNOR} - Outputs high if the inputs are the same.
+\end{itemize}
+
+\newpage
+\subsection{Basic Logic Gates}
+Each module follows a hierarchical design, ensuring reusability and scalability for more complex operations.
+\begin{lstlisting}[language=Verilog]
+/*
+ * Each module has a header that describes the modules 
+ * inputs and outputs.
+ */
+module AND (
+    /* Each module has two inputs and one output */
+    input in1,
+    input in2,
+    output out
+);
+    /* 
+     * Each module then assigns the output to the logical 
+     * operation of the inputs 
+     */
+    assign out = in1 & in2;
+endmodule
+\end{lstlisting}
+
+Derived gates, such as NAND and NOR, are implemented by instantiating their base gates and inverting the output, ensuring modularity and 
+consistency. This approach streamlines debugging and maintains a systematic design by constructing complex logic from fundamental operations.
+\begin{lstlisting}[language=Verilog]
+module NAND (
+    input in1,
+    input in2,
+    output out
+);
+    /* An output for the instantiated gate is made */
+    wire and_result;    
+    AND and_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( and_result )
+    );
+    /* The output is then inverted with the '~' operator */
+    assign out = ~and_result; 
+endmodule
+\end{lstlisting}
+
+\newpage
+\subsection{Arithmetic Shifter}
+The second file implements an arithmetic shifter, which performs left or right shifts on a width-bit input. The width is parameterized 
+and can be set during instantiation, ranging from 1 to 1024 bits. Errors are triggered for extreme values, and a warning is issued at 256 bits.
+\begin{lstlisting}[language=Verilog]
+ module New_nBit_Shift #( parameter WIDTH = 4, parameter OP = 0 ) (
+    input wire [ WIDTH-1:0 ] in,
+    input wire [ WIDTH-1:0 ] shift,
+    output reg [ WIDTH-1:0 ] out,
+    output reg [ WIDTH-1:0 ] overflow
+);
+    /* 
+     * A check is made to verify the parameters used when 
+     * the module is instantiated (if at all specified) 
+     */
+    generate
+        if( WIDTH < 2 ) begin
+            initial begin
+                $error( "WIDTH must be at least 2" );
+            end
+        end
+        else if( OP < 0 || OP > 1 ) begin
+            initial begin
+                $error( "OP must be between 0 or 1" );
+            end
+        end
+    endgenerate
+
+    /* Wires are created to disect the shift input */
+    wire shift_dir = shift[ 0 ];
+    wire [ WIDTH-2:0 ] shift_amt = shift[ WIDTH-2:1 ];
+    wire fill = shift[ WIDTH-1 ];
+
+    /* The magic happends here */
+    always @(*) begin
+        out = { WIDTH{ 1'b0 } };
+        overflow = { WIDTH{ 1'b0 } };
+
+        if( OP == 0 ) begin /* Logical shift */
+            if( shift_dir == 1'b0 ) begin /* Left shift */
+                out = ( in << shift_amt ) | ( fill << ( shift_amt - 1 ) );
+                overflow = in >> ( WIDTH - shift_amt );
+            end
+            else begin  /* Right shift */
+                out = ( in >> shift_amt ) | ( fill << ( WIDTH - shift_amt ) );
+                overflow = in & ( ( 1 << shift_amt ) - 1 );
+            end
+        end
+        else if( OP == 1 ) begin    /* Arithmetic shift */
+                if( shift_dir == 1'b0 ) begin   /* Left shift */
+                    out = in << shift_amt;
+                    overflow = in >> ( WIDTH - shift_amt );
+                end
+                else begin  /* Right shift */
+                    out = $signed( in ) >>> shift_amt;
+                    overflow = in & ( ( 1 << shift_amt ) - 1 );
+                end
+        end
+        else begin
+            /* 
+            * A default case is included to
+            * catch any errors in the OP parameter 
+            */
+            $error( "Error: Default case succeeded where it shouldn't. \n" );
+        end
+    end
+endmodule
+\end{lstlisting}
+
+To facilitate the shifting process, the shift input is decomposed into three distinct components:
+\begin{itemize}
+    \item \textbf{Shift Direction} - Determines whether the shift is left or right.
+    \item \textbf{Shift Amount} - Specifies how many positions the input is shifted.
+    \item \textbf{Fill Bit} - Used in logical shifts to maintain bit alignment.
+\end{itemize}
+
+\subsection{Testbench Development}
+To verify correctness, separate testbenches were created for each module. These testbenches systematically iterate through all possible 
+input combinations to ensure accurate functionality. To improve readability and maintainability, test inputs were controlled using a 
+dedicated task. However, testing the arithmetic shifter was significantly more complex than testing the basic logic gates due to its 
+multiple parameters and shift operations. Despite this, both testbenches followed a similar structured approach to ensure reliable 
+verification.
+
+\section{Waveform Analysis}
+\subsection{GTKWave Overview}
+Each test required a method of evaluation to verify expected results. Hence, the utilization of the GTKWaveform tool was necessary. The 
+tool allowed for the visualization of the simulation results, which were then compared to the expected results. Waveforms were stored in 
+a .vcd file and analyzed using GTKWave to compare actual vs. expected results.
+
+\subsection{Basic Gate Signal Results}
+The basic logic gates have two primary input signals, in1 and in2. The outputs for each gate are shown in a unique signal that is designated
+for that gate. To clarify, the signals received and outputted by the AND and NAND gates are represented in figure \ref{fig:OneBitWaveform}:
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/OneBitWaveform.jpg}
+    \caption{The outputs for the AND and NAND gates reflect the inverse of one another}
+    \label{fig:OneBitWaveform}
+\end{figure}
+
+From the basic logic gates test, and more specifically from the AND and NAND gates, it is noted that the simulation lasts 40ns. Each increment 
+of in2 applies a 10ns delay to simulate propagation effects. Our inputs span across all available iterations (00, 01, 10, 11) where in1 is the 
+driver input and in2 is the iterative input. That being said, for every instance of in1, in2 iterates through all of its available inputs. 
+Furthermore, it can be seen that the NAND and AND gates are direct inverses of each other, which aligns with their functionality conceptually. 
+
+\vspace{5mm}
+For the AND gate, the output signal remains low up until the point when it receives two high input signals, to which it outputs 
+a high signal. For the NAND gate, it exhibits inverse properties to that of the AND gate. That being said, the output signals 
+remain high up until it receives two high input signals, to which it outputs a low signal.
+
+\subsection{Arithmetic Shifter}
+The arithmetic shifter is more complex than basic gates. It uses two inputs but additionally tracks specific bit positions, shifts the input by 
+a defined amount, and captures overflowed bits.
+
+\subsection{Shift Signal Analysis}
+To accurately track changes in shift signals, we carefully monitored bit increments and transitions. Figure \ref{fig:ShiftWaveform} 
+illustrates the hierarchical control of shift signals.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/ShiftWaveform.jpg}
+    \caption{The shift signals are controlled hierarchically by the fill bit, shift amount, and shift direction}
+    \label{fig:ShiftWaveform}
+\end{figure}
+
+Each bit updates based on its position relative to other bits in the signal. The Shift direction is the leading bit that
+controls the overall flow of the signal and is the least significant bit. The shift amount is then controlled afterwards and controls
+the flow of the fill bit. The fill bit is the last bit in the signal to change, hence why it alters the most frequently. Furthermore,
+right shifts involve fewer operations but risk data loss when shifting too far. To mitigate this, a stricter limit is applied. 
+
+\newpage
+\subsection{Arithmetic Shifter Simulation Results}
+For the arithmetic shifters results, there are two distinct outputs that are tested for: the logical shift and the arithmetic shift.
+Both shifts have similar properties, but the arithmetic shift has an additional operation that is performed to inputs that are shifted
+to the right. To clarify the operations, the outputs for the arithmetic shifter are shown in figure \ref{fig:ArithmeticOutputs}:
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/ArithmeticOutputs.jpg}
+    \caption{The logical and arithmetic shifts capture how the input is shifted}
+    \label{fig:ArithmeticOutputs}
+\end{figure}
+
+Both outputs showcase a shift of the input either \textbf{up}(which signifies a left shift) or \textbf{down}(which signifies a right 
+shift). However, there a few key differences between the two outputs.
+
+\begin{description}
+    \item[Logical Shift] Logical shifts use a fill bit at the most significant position, maintaining alignment when shifting left or right.
+    \item[Arithmetic Shift] As opposed to the logical shift, the arithmetic shift has no fill bit used in its shift operation. Arithmetic 
+    shifts behave like logical shifts for left operations but use sign extension for right shifts, preserving the sign bit.
+\end{description}
+
+\subsection{Arithmetic Shifter Overflow Results}
+Since both shift operations may discard bits, an overflow signal captures and preserves these lost values. This is shown by the following 
+figure \ref{fig:ArithmeticOverflow}:
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/ArithmeticOverflow.jpg}
+    \caption{the overflow signals capture the bits that are shifted out of the output}
+    \label{fig:ArithmeticOverflow}
+\end{figure}
+
+From the overflow signals, it can be seen that the overflow signal captures the bits that are shifted out as the input is shifted. The
+capture of these bits allows for the arithmetic shifter to maintain the integrity of the input signal, even as bits are shifted out of
+the output. Overflow behavior remains consistent across logical and arithmetic shifts, capturing bits discarded during the shift process.
+
+\section{Discussion}
+\subsection{Design and Development}
+The development of the basic logic gates and arithmetic shifter was both challenging and rewarding. Designing these modules required a 
+strong foundation in Boolean algebra and digital logic principles. A structured methodology and hierarchical design approach were crucial, 
+allowing us to build complex circuits from simple components. Developing the Verilog code required careful planning to ensure scalability and 
+reusability. Each module underwent iterative improvements to enhance functionality and flexibility. One major improvement was the addition of 
+parameters, which allowed for greater adaptability in testing and implementation.
+
+\subsection{Challenges and Solutions}
+Initially, modules were designed with fixed bit-width inputs and outputs. However, as testing progressed, a more flexible system became essential. 
+To address this, we introduced parameters, enabling dynamic bit-width configuration. This allowed for thorough testing across various input sizes, 
+ensuring robust functionality. To prevent excessive resource usage, constraints were added to the parameters, ensuring the system remained both 
+flexible and efficient. Without these limits, the system risked inefficiencies due to an overly broad scope.
+
+\subsection{Arithmetic Shifter Challenges}
+Few challenges were as significant as those encountered in developing the arithmetic shifter. Since it relied on multiple control inputs, testing 
+required generating a wide range of input combinations. To simplify testing, we combined the three main inputs into a single shift signal, 
+encapsulating all shift control parameters. Additionally, to reduce redundant code in the testbench, tasks were implemented to organize test cases, 
+improving readability and maintainability. Throughout development, continuous improvements in organization and optimization enhanced efficiency, 
+resulting in a more manageable and scalable system.
+
+
+\section{Conclusion}
+The completion of the first phase of this project marks a significant milestone in our journey toward designing a fully functional ALU. The 
+development of basic logic gates and the arithmetic shifter has established a strong foundation for future expansion. Our hierarchical design 
+approach and modular structure have proven effective in creating scalable and reusable components. Rigorous testing and waveform analysis 
+validated the functionality of each module, ensuring they meet the project's requirements. Moving forward, we will extend this foundation by 
+developing more complex modules, such as arithmetic and logic operations, to fully realize the ALU's capabilities. The knowledge and experience 
+gained in this phase will enable us to tackle future challenges effectively and refine our design for greater efficiency and performance.
+
+\end{document}
+

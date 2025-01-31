@@ -233,6 +233,20 @@ module New_nBit_Shift #( parameter WIDTH = 4, parameter OP = 0 ) (
     output reg [ WIDTH-1:0 ] out,
     output reg [ WIDTH-1:0 ] overflow
 );
+    // Compile-time check for invalid WIDTH and OP
+    generate
+        if( WIDTH < 2 ) begin
+            initial begin
+                $error( "WIDTH must be at least 2" );
+            end
+        end
+        else if( OP < 0 || OP > 1 ) begin
+            initial begin
+                $error( "OP must be between 0 or 1" );
+            end
+        end
+    endgenerate
+    
     // Internal wires
     wire shift_dir = shift[ 0 ];  // LSB determines the shift direction
     wire [ WIDTH-2:0 ] shift_amt = shift[ WIDTH-2:1 ]; // Remaining bits determine the shift amount

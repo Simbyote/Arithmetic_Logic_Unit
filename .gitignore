@@ -1,5 +1,6 @@
 # Ignore the output directory
 Project/output/
 Latex/output
-Latex/Report.pdf
+Latex/figures
+Latex/report.pdf
 Latex/samplereport.md
