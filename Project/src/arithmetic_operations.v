@@ -33,162 +33,6 @@
  * - Applies a shift operation to each unpacked input
  * - Packs the shifted outputs back into a single packed output
  */
-module UnpackPack_Shift #( parameter WIDTH = 4, parameter SETS = 2, parameter OP = 0 ) (
-input wire [ SETS*WIDTH-1:0 ] in_packed,
-    input wire shift_dir,
-    input wire [ WIDTH-1:0 ] shift_amt,
-    output wire [ SETS*WIDTH-1:0 ] out_packed,
-    output wire [ SETS*WIDTH-1:0 ] overflow_packed
-);
-    // Internal wires for unpacked inputs and outputs
-    wire [ WIDTH-1:0 ] in_unpacked [ SETS-1:0 ];
-    wire [ WIDTH-1:0 ] out_unpacked [ SETS-1:0 ];
-    wire [ WIDTH-1:0 ] overflow_unpacked [ SETS-1:0 ];
-
-    genvar i;
-    generate
-        // Unpack the pcaked inputs into individual sets
-        for( i = 0; i < SETS; i = i + 1 ) begin : unpack_inputs
-            assign in_unpacked[ i ] = in_packed[ i*WIDTH +: WIDTH ];
-        end
-
-        // Apply the shift operation to each unpacked input
-        for( i = 0; i < SETS; i = i + 1 ) begin : shift_operation
-            nBit_Shift #( .WIDTH( WIDTH ), .OP( OP ) ) shift(
-                .in( in_unpacked[ i ] ),
-                .shift_dir( shift_dir ),
-                .shift_amt( shift_amt ),
-                .out( out_unpacked[ i ] ),
-                .overflow( overflow_unpacked[ i ] )
-            );
-        end
-
-        // Pack the shifted outputs
-        for( i = 0; i < SETS; i = i + 1 ) begin : pack_outputs
-            assign out_packed[ i*WIDTH +: WIDTH ] = out_unpacked[ i ];
-            assign overflow_packed[ i*WIDTH +: WIDTH ] = overflow_unpacked[ i ];
-        end
-    endgenerate
-endmodule
-
-/*
- * nBit_Shift
- *
- * Purpose:
- * - Performs an arithmetic shift (left or right) on an n-bit input
- *   based on a specified shift direction and amount
- *
- * Logical Shift ----
- * - Left shift: 0 = 0001 << 1 = 0010
- * - Right shift: 0 = 0001 >> 1 = 0000
- *
- * Arithmetic Shift ---- 
- * - Left shift: 0 = 0001 << 1 = 0010
- * - Right shift: 0 = 0001 >>> 1 = 0000 (or)
- * - Right shift: 1 = 1000 >>> 1 = 1100
- *
- * Note:
- * - Logical shift fills the shifted-in bits with 0
- * - Arithmetic shift fills the shifted-in bits with the sign bit (MSB)
- * - Shifts bits in binary numbers either left or right
- */
-module nBit_Shift #( parameter WIDTH = 4 , parameter OP = 0 ) (
-    input wire [WIDTH-1:0] in,
-    input wire shift_dir,
-    input wire [WIDTH-1:0] shift_amt,
-    output reg [WIDTH-1:0] out,
-    output reg [ WIDTH-1:0 ] overflow
-);
-    // Compile-time check for invalid WIDTH and OP
-    generate
-        if( WIDTH < 2 ) begin
-            initial begin
-                $error( "WIDTH must be at least 2" );
-            end
-        end
-        else if( OP < 0 || OP > 1 ) begin
-            initial begin
-                $error( "OP must be between 0 or 1" );
-            end
-        end
-    endgenerate
-    
-    // Perform the shift operation based on the specified OP
-    always @(*) begin
-        // Default values
-        out = { WIDTH{ 1'b0 } };
-        overflow = { WIDTH{ 1'b0 } };
-
-        case( OP )
-            0: begin    // Logical shift
-                if( shift_dir == 1'b0 ) begin
-                    out = in << shift_amt;
-                    overflow = in >> (WIDTH - shift_amt);
-                end
-                else begin
-                    out = in >> shift_amt;
-                    overflow = in << (WIDTH - shift_amt);
-                end
-            end
-            1: begin    // Arithmetic shift
-                if( shift_dir == 1'b0 ) begin
-                    out = $signed( in ) <<< shift_amt;
-                    overflow = in >> (WIDTH - shift_amt);
-                end
-                else begin
-                    out = $signed( in ) >>> shift_amt;
-                    overflow = in << (WIDTH - shift_amt);
-                end
-            end
-            default: begin  // Default case for invalid OP
-                $error( "Error: Default case succeeded where it should'nt. \n" );
-            end
-        endcase
-    end
-endmodule
-
-/*
- * mXnBits_Shift
- *
- * Purpose:
- * - Performs a shift operation on a packed input of mxn bits
- *   based on a specified shift direction and amount
- */
-module mXnBits_Shift #( parameter WIDTH = 4, parameter SETS = 2, parameter OP = 0) (
-    input wire [ SETS*WIDTH-1:0 ] in_packed,
-    input wire shift_dir,
-    input wire [ WIDTH-1:0 ] shift_amt,
-    output wire [ SETS*WIDTH-1:0 ] out_packed,
-    output wire [ SETS*WIDTH-1:0 ] overflow_packed
-);
-    // Check for invalid SETS
-    Set_Check #( .SETS( SETS ) ) set_check( );
-
-    // Generate the shift operation based on the specified OP
-    generate
-        if( OP == 0 ) begin
-            // Unpack, shift logically, and pack the inputs and outputs
-            UnpackPack_Shift #( .WIDTH( WIDTH ), .SETS( SETS ), .OP( 0 ) ) shift_logical(
-                .in_packed( in_packed ),
-                .shift_dir( shift_dir ),
-                .shift_amt( shift_amt ),
-                .out_packed( out_packed ),
-                .overflow_packed( overflow_packed )
-            ); 
-        end
-        else if( OP == 1 ) begin
-            // Unpack, shift arithmetically, and pack the inputs and outputs
-            UnpackPack_Shift #( .WIDTH( WIDTH ), .SETS( SETS ), .OP( 1 ) ) shift_arithmetic(
-                .in_packed( in_packed ),
-                .shift_dir( shift_dir ),
-                .shift_amt( shift_amt ),
-                .out_packed( out_packed ),
-                .overflow_packed( overflow_packed )
-            );
-        end
-    endgenerate
-endmodule
-
 module New_UnpackPack_Shift #( parameter WIDTH = 4, parameter SETS = 2, parameter OP = 0 ) (
 input wire [ SETS*WIDTH-1:0 ] in_packed,
     input wire [ SETS*WIDTH-1:0 ] shift_packed,
@@ -227,6 +71,27 @@ input wire [ SETS*WIDTH-1:0 ] in_packed,
     endgenerate
 endmodule
 
+/*
+ * nBit_Shift
+ *
+ * Purpose:
+ * - Performs an arithmetic shift (left or right) on an n-bit input
+ *   based on a specified shift direction and amount
+ *
+ * Logical Shift ----
+ * - Left shift: 0 = 0001 << 1 = 0010
+ * - Right shift: 0 = 0001 >> 1 = 0000
+ *
+ * Arithmetic Shift ---- 
+ * - Left shift: 0 = 0001 << 1 = 0010
+ * - Right shift: 0 = 0001 >>> 1 = 0000 (or)
+ * - Right shift: 1 = 1000 >>> 1 = 1100
+ *
+ * Note:
+ * - Logical shift fills the shifted-in bits with 0
+ * - Arithmetic shift fills the shifted-in bits with the sign bit (MSB)
+ * - Shifts bits in binary numbers either left or right
+ */
 module New_nBit_Shift #( parameter WIDTH = 4, parameter OP = 0 ) (
     input wire [ WIDTH-1:0 ] in,
     input wire [ WIDTH-1:0 ] shift,
@@ -284,6 +149,13 @@ module New_nBit_Shift #( parameter WIDTH = 4, parameter OP = 0 ) (
     end
 endmodule
 
+/*
+ * mXnBits_Shift
+ *
+ * Purpose:
+ * - Performs a shift operation on a packed input of mxn bits
+ *   based on a specified shift direction and amount
+ */
 module New_mXnBits_Shift #( parameter WIDTH = 4, parameter SETS = 2, parameter OP = 0) (
     input wire [ SETS*WIDTH-1:0 ] in_packed,
     input wire [ SETS*WIDTH-1:0 ] shift_packed,
@@ -314,4 +186,22 @@ module New_mXnBits_Shift #( parameter WIDTH = 4, parameter SETS = 2, parameter O
             );
         end
     endgenerate
+endmodule
+
+module Addition #( parameter WIDTH = 4 ) (
+    input wire [ WIDTH-1:0 ] in1,
+    input wire [ WIDTH-1:0 ] in2,
+    output wire [ 2*(WIDTH-1):0 ] out
+);
+
+    // Internal wires
+    wire [ WIDTH:0 ] sum;
+    wire carry;
+
+    // Perform the addition operation
+    assign { carry, sum } = in1 + in2;
+
+    // Assign the output as a cascaded sum and carry
+    assign out = { carry, sum };
+
 endmodule

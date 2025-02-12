@@ -4,6 +4,7 @@
 \usepackage{fancyhdr}   
 \usepackage[utf8]{inputenc} % allow utf-8 input
 \usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
 \usepackage{graphicx}    % include graphics
 \usepackage{natbib}         
 \usepackage{doi}    
@@ -25,9 +26,9 @@
     \textbf{\Class} \\
     \textbf{\Group:} 
     \\
-    \Mike \\
-    \Noah \\
-    \Alex \\
+    \Mike\\
+    \Noah\\
+    \Alex\\
 }
 \date{\today}
 
@@ -56,6 +57,7 @@
 }
 
 \lstset{style=mystyle}
+\hypersetup{hidelinks}  % remove colored boxes around links
 
 \begin{document}
 \maketitle
@@ -67,6 +69,14 @@
 
 \newpage
 \setcounter{page}{1}
+\section{Abstract}
+This report presents the design and verification process of the development of fundamental digital circuits. The work is structured in a
+modular, hierarchical fashion, beginning with the implementation and testing of the basic logic gates, progressing into more complex modules 
+such as the arithmetic shifter developed later on. Detailed simulations are conducted using dedicated testbenches and the GTKWaveform tool 
+to verify that each module functions accordingly and expectedly. While the logic gates demonstrated a predictable and consistent behavior, 
+the arithmetic shifter received multiple iterations to its functions to ensure an optimized and clean design. Overall, the project solidified 
+our understanding of digital circuits and provides a strong foundation for future ALU development.
+
 \section{Introduction}
 The goal of this project is to explore the design and verification of fundamental digital circuits, focusing on constructing basic logic 
 gates and an arithmetic shifter. These circuits form the foundation for a larger Arithmetic Logic Unit (ALU), which will eventually perform 
@@ -236,7 +246,7 @@ a .vcd file and analyzed using GTKWave to compare actual vs. expected results.
 
 \subsection{Basic Gate Signal Results}
 The basic logic gates have two primary input signals, in1 and in2. The outputs for each gate are shown in a unique signal that is designated
-for that gate. To clarify, the signals received and outputted by the AND and NAND gates are represented in figure \ref{fig:OneBitWaveform}:
+for that gate. To clarify, the signals received and outputted by the AND and NAND gates are represented in figure~\ref{fig:OneBitWaveform}:
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.8\textwidth]{figures/OneBitWaveform.jpg}
@@ -259,7 +269,7 @@ The arithmetic shifter is more complex than basic gates. It uses two inputs but 
 a defined amount, and captures overflowed bits.
 
 \subsection{Shift Signal Analysis}
-To accurately track changes in shift signals, we carefully monitored bit increments and transitions. Figure \ref{fig:ShiftWaveform} 
+To accurately track changes in shift signals, we carefully monitored bit increments and transitions. Figure~\ref{fig:ShiftWaveform} 
 illustrates the hierarchical control of shift signals.
 
 \begin{figure}[h]
@@ -274,11 +284,10 @@ controls the overall flow of the signal and is the least significant bit. The sh
 the flow of the fill bit. The fill bit is the last bit in the signal to change, hence why it alters the most frequently. Furthermore,
 right shifts involve fewer operations but risk data loss when shifting too far. To mitigate this, a stricter limit is applied. 
 
-\newpage
 \subsection{Arithmetic Shifter Simulation Results}
 For the arithmetic shifters results, there are two distinct outputs that are tested for: the logical shift and the arithmetic shift.
 Both shifts have similar properties, but the arithmetic shift has an additional operation that is performed to inputs that are shifted
-to the right. To clarify the operations, the outputs for the arithmetic shifter are shown in figure \ref{fig:ArithmeticOutputs}:
+to the right. To clarify the operations, the outputs for the arithmetic shifter are shown in figure~\ref{fig:ArithmeticOutputs}:
 
 \begin{figure}[h]
     \centering
@@ -287,7 +296,7 @@ to the right. To clarify the operations, the outputs for the arithmetic shifter 
     \label{fig:ArithmeticOutputs}
 \end{figure}
 
-Both outputs showcase a shift of the input either \textbf{up}(which signifies a left shift) or \textbf{down}(which signifies a right 
+Both outputs showcase a shift of the input either \textbf{up} (which signifies a left shift) or \textbf{down} (which signifies a right 
 shift). However, there a few key differences between the two outputs.
 
 \begin{description}
@@ -298,7 +307,7 @@ shift). However, there a few key differences between the two outputs.
 
 \subsection{Arithmetic Shifter Overflow Results}
 Since both shift operations may discard bits, an overflow signal captures and preserves these lost values. This is shown by the following 
-figure \ref{fig:ArithmeticOverflow}:
+figure~\ref{fig:ArithmeticOverflow}:
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.8\textwidth]{figures/ArithmeticOverflow.jpg}
