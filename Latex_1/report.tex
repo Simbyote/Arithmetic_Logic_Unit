@@ -237,6 +237,52 @@ input combinations to ensure accurate functionality. To improve readability and 
 dedicated task. However, testing the arithmetic shifter was significantly more complex than testing the basic logic gates due to its 
 multiple parameters and shift operations. Despite this, both testbenches followed a similar structured approach to ensure reliable 
 verification.
+\begin{lstlisting}[language=Verilog]
+    // Internal wires to store the output of the module
+    reg [ 0:0 ] in, in1, in2;
+    wire [ 0:0 ] NOT_out, AND_out, OR_out, NAND_out, NOR_out, XOR_out, XNOR_out;
+
+    // Each gate is then instantiated such as:
+    AND and_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( AND_out )
+    );
+    OR or_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( OR_out )
+    );
+    // And so on...
+
+    // A task is then created to handle the test cases
+    task test_bit;
+        begin
+            // Initialize the first input signal
+            in1 = { 1'b0 };
+
+            repeat( 2 ) begin
+                // Initialize the second input signal
+                in2 = { 1'b0 };
+                repeat( 2 ) begin
+                    #10;
+                    in2 = in2 + 1;
+                end
+                in1 = in1 + 1;
+            end
+        end
+    endtask
+
+    // Finally, the initial block is used to call the task
+    initial begin
+        $dumpfile( "waveform1.vcd" );
+        $dumpvars( 0, testbench_bit );
+
+            test_bit;
+
+        $finish;
+    end
+\end{lstlisting}
 
 \section{Waveform Analysis}
 \subsection{GTKWave Overview}

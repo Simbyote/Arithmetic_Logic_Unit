@@ -8,7 +8,7 @@
  * on n-bit input vectors
  *
  * Modules Included:
- * - GateInstantiator: Core module that instantiates the required gate based on the
+ * - Gate_Instantiator: Core module that instantiates the required gate based on the
  *      specified operation
  * - NOT_nBit: Inverts each bit in an n-bit input
  * - AND_nBit: Checks if both corresponding bits are high in two n-bit inputs
@@ -23,14 +23,14 @@
  * - OP: The logical operation to perform 
  *
  * Implementation:
- * - The `GateInstantiator` module provides a generalized framework to instantiate
+ * - The `Gate_Instantiator` module provides a generalized framework to instantiate
  *   the required gate based on the specified operation
- * - Each operation-specific module acts as a wrapper for the `GateInstantiator` 
+ * - Each operation-specific module acts as a wrapper for the `Gate_Instantiator` 
  *   module, passing the required parameters
  */
 
 /*
- * GateInstantiator
+ * Gate_Instantiator
  *
  * Purpose:
  * - Dynamically instantiates the required gate based on the OP parameter
@@ -42,7 +42,7 @@
  *   throwing an error if it is invalid
  */
 
-module GateInstantiator #( parameter WIDTH = 4 , parameter OP = 0 ) (
+module Gate_Instantiator #( parameter WIDTH = 4 , parameter OP = 0 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out
@@ -60,59 +60,61 @@ module GateInstantiator #( parameter WIDTH = 4 , parameter OP = 0 ) (
     genvar i;
     generate
         for( i = 0; i < WIDTH; i = i + 1 ) begin : gate_loop
-            if( OP == 0 ) begin
-                NOT not_instance (
-                    .in( in1[ i ] ),
-                    .out( out[ i ] )
-                );
-            end
-            else if( OP == 1 ) begin
-                AND and_instance (
-                    .in1( in1[ i ] ),
-                    .in2( in2[ i ] ),
-                    .out( out[ i ] )
-                );
-            end
-            else if( OP == 2 ) begin
-                OR or_instance (
-                    .in1( in1[ i ] ),
-                    .in2( in2[ i ] ),
-                    .out( out[ i ] )
-                );
-            end
-            else if( OP == 3 ) begin
-                NAND nand_instance (
-                    .in1( in1[ i ] ),
-                    .in2( in2[ i ] ),
-                    .out( out[ i ] )
-                );
-            end
-            else if( OP == 4 ) begin
-                NOR nor_instance (
-                    .in1( in1[ i ] ),
-                    .in2( in2[ i ] ),
-                    .out( out[ i ] )
-                );
-            end
-            else if( OP == 5 ) begin
-                XOR xor_instance (
-                    .in1( in1[ i ] ),
-                    .in2( in2[ i ] ),
-                    .out( out[ i ] )
-                );
-            end
-            else if( OP == 6 ) begin
-                XNOR xnor_instance (
-                    .in1( in1[ i ] ),
-                    .in2( in2[ i ] ),
-                    .out( out[ i ] )
-                );
-            end
-            else begin
-                initial begin
-                    $error( "Error: Invalid OP value (%0d). Must be between 0 and 6", OP );
+            case( OP )
+                0: begin
+                    NOT not_instance (
+                        .in( in1[ i ] ),
+                        .out( out[ i ] )
+                    );
                 end
-            end
+                1: begin
+                    AND and_instance (
+                        .in1( in1[ i ] ),
+                        .in2( in2[ i ] ),
+                        .out( out[ i ] )
+                    );
+                end
+                2: begin
+                    OR or_instance (
+                        .in1( in1[ i ] ),
+                        .in2( in2[ i ] ),
+                        .out( out[ i ] )
+                    );
+                end
+                3: begin
+                    NAND nand_instance (
+                        .in1( in1[ i ] ),
+                        .in2( in2[ i ] ),
+                        .out( out[ i ] )
+                    );
+                end
+                4: begin
+                    NOR nor_instance (
+                        .in1( in1[ i ] ),
+                        .in2( in2[ i ] ),
+                        .out( out[ i ] )
+                    );
+                end
+                5: begin
+                    XOR xor_instance (
+                        .in1( in1[ i ] ),
+                        .in2( in2[ i ] ),
+                        .out( out[ i ] )
+                    );
+                end
+                6: begin
+                    XNOR xnor_instance (
+                        .in1( in1[ i ] ),
+                        .in2( in2[ i ] ),
+                        .out( out[ i ] )
+                    );
+                end
+                default: begin
+                    initial begin
+                        $error( "Error: Invalid OP value (%0d). Must be between 0 and 6", OP );
+                    end
+                end
+            endcase
         end
     endgenerate
 endmodule
@@ -132,7 +134,7 @@ module NOT_nBit #( parameter WIDTH = 4 ) (
     Width_Check #( .WIDTH( WIDTH ) ) width_check( );
 
     // Instantiate the corresonding operation (NOT - 0)
-    GateInstantiator #(.WIDTH( WIDTH ), .OP( 0 ) ) not_instance (
+    Gate_Instantiator #(.WIDTH( WIDTH ), .OP( 0 ) ) not_instance (
         .in1( in ),
         .in2( in ),
         .out( out )
@@ -155,7 +157,7 @@ module AND_nBit #( parameter WIDTH = 4 ) (
     Width_Check #( .WIDTH( WIDTH ) ) width_check( );
 
     // Instatiate the corresponding operation (AND - 1)
-    GateInstantiator #(.WIDTH( WIDTH ), .OP( 1 ) ) and_instance (
+    Gate_Instantiator #(.WIDTH( WIDTH ), .OP( 1 ) ) and_instance (
         .in1( in1 ),
         .in2( in2 ),
         .out( out )
@@ -178,7 +180,7 @@ module OR_nBit #( parameter WIDTH = 4 ) (
     Width_Check #( .WIDTH( WIDTH ) ) width_check( );
 
     // Instantiate the corresponding operation (OR - 2)
-    GateInstantiator #(.WIDTH( WIDTH ), .OP( 2 ) ) or_instance (
+    Gate_Instantiator #(.WIDTH( WIDTH ), .OP( 2 ) ) or_instance (
         .in1( in1 ),
         .in2( in2 ),
         .out( out )
@@ -201,7 +203,7 @@ module NAND_nBit #( parameter WIDTH = 4 ) (
     Width_Check #( .WIDTH( WIDTH ) ) width_check( );
 
     // Instantiate the corresponding operation (NAND - 3)
-    GateInstantiator #(.WIDTH( WIDTH ), .OP( 3 ) ) nand_instance (
+    Gate_Instantiator #(.WIDTH( WIDTH ), .OP( 3 ) ) nand_instance (
         .in1( in1 ),
         .in2( in2 ),
         .out( out )
@@ -224,7 +226,7 @@ module NOR_nBit #( parameter WIDTH = 4 ) (
     Width_Check #( .WIDTH( WIDTH ) ) width_check( );
 
     // Instantiate the corresponding operation (NOR - 4)
-    GateInstantiator #(.WIDTH( WIDTH ), .OP( 4 ) ) nor_instance (
+    Gate_Instantiator #(.WIDTH( WIDTH ), .OP( 4 ) ) nor_instance (
         .in1( in1 ),
         .in2( in2 ),
         .out( out )
@@ -247,7 +249,7 @@ module XOR_nBit #( parameter WIDTH = 4 ) (
     Width_Check #( .WIDTH( WIDTH ) ) width_check( );
 
     // Instantiate the corresponding operation (XOR - 5)
-    GateInstantiator #(.WIDTH( WIDTH ), .OP( 5 ) ) xor_instance (
+    Gate_Instantiator #(.WIDTH( WIDTH ), .OP( 5 ) ) xor_instance (
         .in1( in1 ),
         .in2( in2 ),
         .out( out )
@@ -270,7 +272,7 @@ module XNOR_nBit #( parameter WIDTH = 4 ) (
     Width_Check #( .WIDTH( WIDTH ) ) width_check( );
 
     // Instantiate the corresponding operation (XNOR - 6)
-    GateInstantiator #(.WIDTH( WIDTH ), .OP( 6 ) ) xnor_instance (
+    Gate_Instantiator #(.WIDTH( WIDTH ), .OP( 6 ) ) xnor_instance (
         .in1( in1 ),
         .in2( in2 ),
         .out( out )

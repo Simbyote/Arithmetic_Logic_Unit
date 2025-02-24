@@ -188,20 +188,284 @@ module New_mXnBits_Shift #( parameter WIDTH = 4, parameter SETS = 2, parameter O
     endgenerate
 endmodule
 
-module Addition #( parameter WIDTH = 4 ) (
+// 1-bit Half Adder
+module Half_Adder (
+    input wire in1,
+    input wire in2,
+    output wire out,
+    output wire carry_out
+);
+    // Determines the sum
+    XOR xor_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( out )
+    );
+
+    // Determines the carry
+    AND and_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( carry_out )
+    );
+endmodule
+
+// nBit Full Adder ( in1 + in2 )
+module Full_Adder #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
-    output wire [ 2*(WIDTH-1):0 ] out
+    output wire [ WIDTH-1:0 ] out,
+    output wire final_carry
 );
+    // Internal carry wires
+    wire [ WIDTH-1:0 ] carry_in, carry_out;
+    assign carry_in[ 0 ] = 1'b0;
+
+    genvar i;
+    generate
+        for( i = 0; i < WIDTH; i = i + 1 ) begin : adder_loop
+            // Internal output wires
+            wire temp_carry_out, temp_out;
+
+            // Add the inputs and store the output
+            Half_Adder half_adder_instance1 (
+                .in1( in1[ i ] ),
+                .in2( in2[ i ] ),
+                .out( temp_out ),
+                .carry_out( temp_carry_out )
+            );
+
+            // Add the carry
+            Half_Adder half_adder_instance2 (
+                .in1( temp_out ),
+                .in2( carry_in[ i ] ),
+                .out( out[ i ] ),
+                .carry_out( carry_out[ i ] )
+            );
+
+            // Assign the carry to the next bit
+            if( i < WIDTH - 1 ) begin
+                OR or_instance (
+                    .in1( carry_out[ i ] ),
+                    .in2( temp_carry_out ),
+                    .out( carry_in[ i + 1 ] )
+                );
+            end
+            else begin
+                OR or_instance (
+                    .in1( carry_out[ i ] ),
+                    .in2( temp_carry_out ),
+                    .out( final_carry )
+                );
+            end
+        end
+    endgenerate
+endmodule
+
+// 1-bit half subtractor
+module Half_Subtractor (
+    input wire in1,
+    input wire in2,
+    output wire out,
+    output wire borrow_out
+);
+    // Determines the difference
+    XOR xor_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( out )
+    );
+
+    // Inverts the subtractor input
+    NOT not_instance (
+        .in( in1 ),
+        .out( in1_not )
+    );
+
+    // Determines the borrow
+    AND and_instance (
+        .in1( in1_not ),
+        .in2( in2 ),
+        .out( borrow_out )
+    );
+endmodule
+
+// nBit Subtractor ( in1 - in2 )
+module Full_Subtractor #( parameter WIDTH = 4 ) (
+    input wire [ WIDTH-1:0 ] in1,
+    input wire [ WIDTH-1:0 ] in2,
+    output wire [ WIDTH-1:0 ] out,
+    output wire final_borrow
+);
+    // Internal borrow wires
+    wire [ WIDTH-1:0 ] borrow_in, borrow_out;
+    assign borrow_in[ 0 ] = 1'b0;
+
+    genvar i;
+    generate
+        for( i = 0; i < WIDTH; i = i + 1 ) begin : subtractor_loop
+            // Internal output wires
+            wire temp_carry_out, temp_out;
+
+            // Subtract the inputs and store the output
+            Half_Subtractor half_subtractor_instance1 (
+                .in1( in1[ i ] ),
+                .in2( in2[ i ] ),
+                .out( temp_out ),
+                .borrow_out( temp_carry_out )
+            );
+
+            // Subtract the borrow
+            Half_Subtractor half_subtractor_instance2 (
+                .in1( temp_out ),
+                .in2( borrow_in[ i ] ),
+                .out( out[ i ] ),
+                .borrow_out( borrow_out[ i ] )
+            );
+
+            // Assign the borrow to the next bit
+            if( i < WIDTH - 1 ) begin
+                OR or_instance (
+                    .in1( borrow_out[ i ] ),
+                    .in2( temp_carry_out ),
+                    .out( borrow_in[ i + 1 ] )
+                );
+            end
+            else begin
+                OR or_instance (
+                    .in1( borrow_out[ i ] ),
+                    .in2( temp_carry_out ),
+                    .out( final_borrow )
+                );
+            end
+        end
+    endgenerate
+endmodule
+
+module New_Multiplier #( parameter WIDTH = 4 ) (
+    input wire [ WIDTH-1:0 ] in1,
+    input wire [ WIDTH-1:0 ] in2,
+    output reg [ ( WIDTH*2 )-1:0 ] out
+);
+    parameter PRODUCT_WIDTH = ( WIDTH*2 );  // The width of the product
 
     // Internal wires
-    wire [ WIDTH:0 ] sum;
-    wire carry;
+    wire [ PRODUCT_WIDTH*WIDTH-1:0 ] accumulator;
+    reg [ PRODUCT_WIDTH-1:0 ] partial_sum[ WIDTH-1:0 ];
 
-    // Perform the addition operation
-    assign { carry, sum } = in1 + in2;
+    // Generate the accumulator
+    Generate_Accumulator #( .WIDTH( WIDTH ) ) accumulator_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( accumulator )
+    );
 
-    // Assign the output as a cascaded sum and carry
-    assign out = { carry, sum };
+    reg [ WIDTH-1:0 ] i;    // Loop counters
 
+    always @(*) begin
+        // Default output
+        out = { WIDTH{ 1'b0 } };
+
+        for( i = 0; i < WIDTH; i = i + 1 ) begin : multiplier_loop
+            if( i == 0 ) begin
+                if( in2[ i ] == 1 ) begin
+                    // Assign the first output to the first accumulator value
+                    partial_sum[ i ] = accumulator[ i * PRODUCT_WIDTH +: PRODUCT_WIDTH ];
+                end
+                else begin
+                    // Assign the first output to 0
+                    partial_sum[ i ] = { WIDTH{ 1'b0 } };
+                end
+            end
+            else begin
+                if( in2[ i ] == 1'b1 ) begin
+                // Compute partial sum
+                partial_sum[ i ] = partial_sum[ i -1 ] + accumulator[ i * PRODUCT_WIDTH +: PRODUCT_WIDTH ];
+                end
+                else begin
+                    // Carry over the previous sum
+                    partial_sum[ i ] = partial_sum[ i - 1 ];
+                end
+            end
+        end
+
+        out = partial_sum[ WIDTH - 1 ];
+    end
+endmodule
+
+module Generate_Accumulator #( parameter WIDTH = 4 ) (
+    input wire [ WIDTH-1:0 ] in1,
+    input wire [ WIDTH-1:0 ] in2,
+    output wire [ ( PRODUCT_WIDTH*WIDTH )-1:0 ] out
+);
+    parameter PRODUCT_WIDTH = ( WIDTH*2 );  // The width of the product
+
+    genvar i;
+    generate
+        for( i = 0; i < WIDTH; i = i + 1 ) begin : accumulator_loop
+            // Internal wires of the shift operation
+            wire [ WIDTH-1:0 ] shift, overflow, shift_result;
+            wire [ PRODUCT_WIDTH-1:0 ] temp_out;    
+            wire [ WIDTH-2:0 ] shift_amt;
+            wire final_carry;
+
+            // Assign the shift amount
+            assign shift_amt = i;
+            assign shift = { 1'b0, shift_amt, 1'b0 };
+
+            New_nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) shift_instance (
+                .in( in1 ),
+                .shift( shift ),
+                .out( shift_result ),
+                .overflow( overflow )
+            );
+
+            // Assign the shifted output to the final output
+            assign temp_out = { overflow, shift_result };
+            assign out[ i*PRODUCT_WIDTH +: PRODUCT_WIDTH ] = temp_out;      
+        end
+    endgenerate
+endmodule
+
+module Multiplier #( parameter WIDTH = 4 ) (
+    input wire [ WIDTH-1:0 ] in1,
+    input wire [ WIDTH-1:0 ] in2,
+    output wire [ ( WIDTH*2 )-1:0 ] out
+);
+    parameter PRODUCT_WIDTH = ( WIDTH*2 );  // The width of the product
+    // Internal wires
+    wire [ PRODUCT_WIDTH*WIDTH-1:0 ] accumulator;
+    wire [ PRODUCT_WIDTH-1:0 ] partial_sum[ WIDTH-1:0 ];
+    wire [ PRODUCT_WIDTH-1:0 ] shifted_in[ WIDTH-1:0 ];
+
+    Generate_Accumulator #( .WIDTH( WIDTH ) ) accumulator_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( accumulator )
+    );
+
+    assign partial_sum[ 0 ] = in2[ 0 ] ? accumulator[ 0*PRODUCT_WIDTH +: PRODUCT_WIDTH ] : { WIDTH{ 1'b0 } };
+
+    // Parse the accumulator and add the results
+    genvar i;
+    generate
+        for( i = 1; i < WIDTH; i = i + 1 ) begin : multiplier_loop
+            wire [ PRODUCT_WIDTH-1:0 ] temp_out;
+            wire final_carry;
+
+            // Add the current output to the previous output
+            Full_Adder #( .WIDTH( PRODUCT_WIDTH ) ) adder_instance (
+                .in1( accumulator[ i*PRODUCT_WIDTH +: PRODUCT_WIDTH ] ),
+                .in2( partial_sum[ i - 1 ] ),
+                .out( temp_out ),
+                .final_carry( final_carry )
+            );
+
+            // Assign the current output to the final carry and its output
+            assign partial_sum[ i ] = in2[ i ] ? { final_carry, temp_out } : partial_sum[ i - 1 ];
+        end
+
+        // Assign the final output to the last output
+        assign out = partial_sum[ WIDTH - 1 ];
+    endgenerate
 endmodule
