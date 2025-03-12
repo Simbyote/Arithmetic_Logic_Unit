@@ -126,7 +126,7 @@ endmodule
  * - Processes each bit in a n-bit input and computes the bitwise NOT
  *   inverting each bit
  */
-module NOT_nBit #( parameter WIDTH = 4 ) (
+module nBit_NOT #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in,
     output wire [ WIDTH-1:0 ] out
 );
@@ -148,7 +148,7 @@ endmodule
  * - Processes each bit in two n-bit inputs and computes the bitwise AND
  *   operation on each pair of bits
  */
-module AND_nBit #( parameter WIDTH = 4 ) (
+module nBit_AND #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out
@@ -171,7 +171,7 @@ endmodule
  * - Processes each bit in two n-bit inputs and computes the bitwise OR
  *   operation on each pair of bits
  */
-module OR_nBit #( parameter WIDTH = 4 ) (
+module nBit_OR #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out
@@ -194,7 +194,7 @@ endmodule
  * - Processes each bit in two n-bit inputs and computes the bitwise NAND
  *   operation on each pair of bits
  */
-module NAND_nBit #( parameter WIDTH = 4 ) (
+module nBit_NAND #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out
@@ -217,7 +217,7 @@ endmodule
  * - Processes each bit in two n-bit inputs and computes the bitwise NOR
  *   operation on each pair of bits
  */
-module NOR_nBit #( parameter WIDTH = 4 ) (
+module nBit_NOR #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out
@@ -240,7 +240,7 @@ endmodule
  * - Processes each bit in two n-bit inputs and computes the bitwise XOR
  *   operation on each pair of bits
  */
-module XOR_nBit #( parameter WIDTH = 4 ) (
+module nBit_XOR #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out
@@ -263,7 +263,7 @@ endmodule
  * - Processes each bit in two n-bit inputs and computes the bitwise XNOR
  *   operation on each pair of bits
  */
-module XNOR_nBit #( parameter WIDTH = 4 ) (
+module nBit_XNOR #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out

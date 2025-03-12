@@ -3,6 +3,36 @@ module testbench_arithmeticOP;
     parameter WIDTH = 4;    // The number of bits for the input-output
     parameter BIT_STATE = 2 ** WIDTH;   // The total possible states for the given bit WIDTH
 
+    // Less Than Comparator
+    reg [ WIDTH-1:0 ] less_in1, less_in2;
+    wire less_out;
+
+    Less_Than #( .WIDTH( WIDTH ) ) less_than_instance (
+        .in1( less_in1 ),
+        .in2( less_in2 ),
+        .out( less_out )
+    );
+
+    // Greater Than Comparator
+    reg [ WIDTH-1:0 ] greater_in1, greater_in2;
+    wire greater_out;
+
+    Greater_Than #( .WIDTH( WIDTH ) ) greater_than_instance (
+        .in1( greater_in1 ),
+        .in2( greater_in2 ),
+        .out( greater_out )
+    );
+
+    // Equal To Comparator
+    reg [ WIDTH-1:0 ] equal_in1, equal_in2;
+    wire equal_out;
+
+    Equal_To #( .WIDTH( WIDTH ) ) equal_instance (
+        .in1( equal_in1 ),
+        .in2( equal_in2 ),
+        .out( equal_out )
+    );
+
     // Half Adder
     reg half_in1, half_in2;
     wire half_adder_out, half_adder_carry_out;
@@ -49,78 +79,60 @@ module testbench_arithmeticOP;
 
     // Multiplier
     reg [ WIDTH-1:0 ] mult_in1, mult_in2;
-    wire [ ( WIDTH*2 )-1:0 ] mult_out;
+    wire [ WIDTH-1:0 ] mult_low, mult_high;
 
-    New_Multiplier #( .WIDTH( WIDTH ) ) always_method (
+    Multiplier #( .WIDTH( WIDTH ) ) multiplier_instance (
         .in1( mult_in1 ),
         .in2( mult_in2 ),
-        .out( mult_out )
+        .out_low( mult_low ),
+        .out_high( mult_high )
     );
 
-    Multiplier #( .WIDTH( WIDTH ) ) generate_method (
-        .in1( mult_in1 ),
-        .in2( mult_in2 ),
-        .out( mult_out )
+    // Divider
+    reg [ WIDTH-1:0 ] div_in1, div_in2;
+    wire [ WIDTH-1:0 ] div_out, div_remainder;
+
+    Divider #( .WIDTH( WIDTH ) ) divider_instance (
+        .in1( div_in1 ),
+        .in2( div_in2 ),
+        .out( div_out ),
+        .remainder( div_remainder )
     );
 
-    task test_half;
-        begin
-            half_in1 = { 1'b0 };
-            repeat( 2 ) begin
-                half_in2 = { 1'b0 };
-                repeat( 2 ) begin
-                    #10;
-                    half_in2 = half_in2 + 1;
-                end
-                half_in1 = half_in1 + 1;
-            end
+    `define GENERIC_HALF( REG1, REG2 ) \
+        begin \
+            REG1 = { 1'b0 }; \
+            repeat( 2 ) begin \
+                REG2 = { 1'b0 }; \
+                repeat( 2 ) begin \
+                    #10; \
+                    REG2 = REG2 + 1; \
+                end \
+                REG1 = REG1 + 1; \
+            end \
         end
-    endtask
 
-    task test_full;
-        begin
-            full_in1 = { WIDTH{ 1'b0 } }; 
-
-            repeat( BIT_STATE ) begin
-                full_in2 = { WIDTH{ 1'b0 } };
-                repeat( BIT_STATE ) begin
-                    #10;
-                    full_in2 = full_in2 + 1;
-                end
-                full_in1 = full_in1 + 1;
-            end
-            full_in1 = { WIDTH{ 1'b0 } } ;
-            full_in2 = { WIDTH{ 1'b0 } };
+    `define GENERIC_FULL( REG1, REG2 ) \
+        begin \
+            REG1 = { WIDTH{ 1'b0 } }; \
+            repeat( BIT_STATE ) begin \
+                REG2 = { WIDTH{ 1'b0 } }; \
+                repeat( BIT_STATE ) begin \
+                    #10; \
+                    REG2 = REG2 + 1; \
+                end \
+                REG1 = REG1 + 1; \
+            end \
+            REG1 = { WIDTH{ 1'b0 } }; \
+            REG2 = { WIDTH{ 1'b0 } }; \
         end
-    endtask 
-
-    task test_multiplier;
-        begin
-            mult_in1 = { WIDTH{ 1'b0 } };
-
-            repeat( BIT_STATE ) begin
-                mult_in2 = { WIDTH{ 1'b0 } };
-
-                repeat( BIT_STATE ) begin
-                    #10;
-                    mult_in2 = mult_in2 + 1;
-
-                end
-
-                mult_in1 = mult_in1 + 1;
-            end
-            mult_in1 = { WIDTH{ 1'b0 } };
-            mult_in2 = { WIDTH{ 1'b0 } };
-        end
-    endtask
 
     initial begin
         $dumpfile( "waveform6.vcd" );
         $dumpvars( 0, testbench_arithmeticOP );
 
-
-        test_multiplier;
+        `GENERIC_FULL( div_in1, div_in2 );
+        
         #50 $finish;
-
     end
 endmodule

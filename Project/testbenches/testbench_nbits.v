@@ -28,36 +28,36 @@ module testbench_nbits;
     /*
      * Instantiate each nBit gate
      */
-    NOT_nBit #( .WIDTH( WIDTH ) ) not_instance (
+    nBit_NOT #( .WIDTH( WIDTH ) ) not_instance (
         .in( in1 ),
         .out( NOT_out )
     );
-    AND_nBit #( .WIDTH( WIDTH ) ) and_instance (
+    nBit_AND #( .WIDTH( WIDTH ) ) and_instance (
         .in1( in1 ),
         .in2( in2 ),
         .out( AND_out )
     );
-    OR_nBit #( .WIDTH( WIDTH ) ) or_instance (
+    nBit_OR #( .WIDTH( WIDTH ) ) or_instance (
         .in1( in1 ),
         .in2( in2 ),
         .out( OR_out )
     );
-    NAND_nBit #( .WIDTH( WIDTH ) ) nand_instance (
+    nBit_NAND #( .WIDTH( WIDTH ) ) nand_instance (
         .in1( in1 ),
         .in2( in2 ),
         .out( NAND_out )
     );
-    NOR_nBit #( .WIDTH( WIDTH ) ) nor_instance (
+    nBit_NOR #( .WIDTH( WIDTH ) ) nor_instance (
         .in1( in1 ),
         .in2( in2 ),
         .out( NOR_out )
     );
-    XOR_nBit #( .WIDTH( WIDTH ) ) xor_instance (
+    nBit_XOR #( .WIDTH( WIDTH ) ) xor_instance (
         .in1( in1 ),
         .in2( in2 ),
         .out( XOR_out )
     );
-    XNOR_nBit #( .WIDTH( WIDTH ) ) xnor_instance (
+    nBit_XNOR #( .WIDTH( WIDTH ) ) xnor_instance (
         .in1( in1 ),
         .in2( in2 ),
         .out( XNOR_out )

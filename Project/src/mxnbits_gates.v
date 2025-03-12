@@ -45,7 +45,7 @@
  *   that are then processed based on the specified operation. The results are
  *   repacked into a single output
  */
-module UnpackPack_mXnbits #( parameter WIDTH = 4, parameter SETS = 2, parameter OP = 0 ) (
+module mXnBit_UnpackPack #( parameter WIDTH = 4, parameter SETS = 2, parameter OP = 0 ) (
     input wire [ SETS*WIDTH-1:0 ] in1_packed,
     input wire [ SETS*WIDTH-1:0 ] in2_packed,
     output wire [ SETS*WIDTH-1:0 ] out_packed
@@ -75,42 +75,42 @@ module UnpackPack_mXnbits #( parameter WIDTH = 4, parameter SETS = 2, parameter 
         // Apply the corresponding operation to each set
         for( i = 0; i < SETS; i = i + 1 ) begin : instantiate
             if( OP == 0 )
-                NOT_nBit #( .WIDTH( WIDTH ) ) not_instance (
+                nBit_NOT #( .WIDTH( WIDTH ) ) not_instance (
                     .in( in1_unpacked[ i ] ),
                     .out( out_unpacked[ i ] )
                 );
             else if( OP == 1 )
-                AND_nBit #( .WIDTH( WIDTH ) ) and_instance (
+                nBit_AND #( .WIDTH( WIDTH ) ) and_instance (
                     .in1( in1_unpacked[ i ] ),
                     .in2( in2_unpacked[ i ] ),
                     .out( out_unpacked[ i ] )
                 );
             else if( OP == 2 )
-                OR_nBit #( .WIDTH( WIDTH ) ) or_instance (
+                nBit_OR #( .WIDTH( WIDTH ) ) or_instance (
                     .in1( in1_unpacked[ i ] ),
                     .in2( in2_unpacked[ i ] ),
                     .out( out_unpacked[ i ] )
                 );
             else if( OP == 3 )
-                NAND_nBit #( .WIDTH( WIDTH ) ) nand_instance (
+                nBit_NAND #( .WIDTH( WIDTH ) ) nand_instance (
                     .in1( in1_unpacked[ i ] ),
                     .in2( in2_unpacked[ i ] ),
                     .out( out_unpacked[ i ] )
                 );
             else if( OP == 4 )
-                NOR_nBit #( .WIDTH( WIDTH ) ) nor_instance (
+                nBit_NOR #( .WIDTH( WIDTH ) ) nor_instance (
                     .in1( in1_unpacked[ i ] ),
                     .in2( in2_unpacked[ i ] ),
                     .out( out_unpacked[ i ] )
                 );
             else if( OP == 5 )
-                XOR_nBit #( .WIDTH( WIDTH ) ) xor_instance (
+                nBit_XOR #( .WIDTH( WIDTH ) ) xor_instance (
                     .in1( in1_unpacked[ i ] ),
                     .in2( in2_unpacked[ i ] ),
                     .out( out_unpacked[ i ] )
                 );
             else if( OP == 6 )
-                XNOR_nBit #( .WIDTH( WIDTH ) ) xnor_instance (
+                nBit_XNOR #( .WIDTH( WIDTH ) ) xnor_instance (
                     .in1( in1_unpacked[ i ] ),
                     .in2( in2_unpacked[ i ] ),
                     .out( out_unpacked[ i ] )
@@ -125,13 +125,13 @@ module UnpackPack_mXnbits #( parameter WIDTH = 4, parameter SETS = 2, parameter 
 endmodule
 
 /*
- * NOT_mXnBits
+ * mXnBits_NOT
  * 
  * Purpose:
- * - Wraps with the UnpackPack_mXnbits module to perform the NOT operation
+ * - Wraps with the mXnBits_UnpackPack module to perform the NOT operation
  *   on multiple sets of n-bit inputs
  */
-module NOT_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
+module mXnBit_NOT #( parameter WIDTH = 4, parameter SETS = 2 ) (
     input wire [ SETS*WIDTH-1:0 ] in_packed,
     output wire [ SETS*WIDTH-1:0 ] out_packed
 );
@@ -139,20 +139,20 @@ module NOT_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
     Set_Check #( .SETS( SETS ) ) set_check ( );
 
     // Unpack, instantiate NOT operation (0), and pack the output
-    UnpackPack_mXnbits #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 0 ) ) not_unpack_pack (
+    mXnBit_UnpackPack #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 0 ) ) not_unpack_pack (
         .in1_packed( in_packed ),
         .out_packed( out_packed )
     );
 endmodule
 
 /*
- * AND_mXnBits
+ * mXnBits_AND
  *
  * Purpose:
- * - Wraps with the UnpackPack_mXnbits module to perform the AND operation
+ * - Wraps with the mXnBits_UnpackPack module to perform the AND operation
  *   on multiple sets of n-bit inputs
  */
-module AND_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
+module mXnBit_AND #( parameter WIDTH = 4, parameter SETS = 2 ) (
     input wire [ SETS*WIDTH-1:0 ] in1_packed,
     input wire [ SETS*WIDTH-1:0 ] in2_packed,
     output wire [ SETS*WIDTH-1:0 ] out_packed
@@ -161,7 +161,7 @@ module AND_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
     Set_Check #( .SETS( SETS ) ) set_check ( );
 
     // Unpack, instantiate AND operation (1), and pack the output
-    UnpackPack_mXnbits #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 1 ) ) and_pack_unpack (
+    mXnBit_UnpackPack #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 1 ) ) and_pack_unpack (
         .in1_packed( in1_packed ),
         .in2_packed( in2_packed ),
         .out_packed( out_packed )
@@ -169,13 +169,13 @@ module AND_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
 endmodule
 
 /*
- * OR_mXnBits
+ * mXnBits_OR
  *
  * Purpose:
- * - Wraps with the UnpackPack_mXnbits module to perform the OR operation
+ * - Wraps with the mXnBits_UnpackPack module to perform the OR operation
  *   on multiple sets of n-bit inputs
  */
-module OR_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
+module mXnBit_OR #( parameter WIDTH = 4, parameter SETS = 2 ) (
     input wire [ SETS*WIDTH-1:0 ] in1_packed,
     input wire [ SETS*WIDTH-1:0 ] in2_packed,
     output wire [ SETS*WIDTH-1:0 ] out_packed
@@ -184,7 +184,7 @@ module OR_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
     Set_Check #( .SETS( SETS ) ) set_check ( );
 
     // Unpack, instantiate OR operation (2), and pack the output
-    UnpackPack_mXnbits #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 2 ) ) or_pack_unpack (
+    mXnBit_UnpackPack #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 2 ) ) or_pack_unpack (
         .in1_packed( in1_packed ),
         .in2_packed( in2_packed ),
         .out_packed( out_packed )
@@ -192,13 +192,13 @@ module OR_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
 endmodule
 
 /*
- * NAND_mXnBits
+ * mXnBits_NAND
  *
  * Purpose:
- * - Wraps with the UnpackPack_mXnbits module to perform the NAND operation
+ * - Wraps with the mXnBits_UnpackPack module to perform the NAND operation
  *   on multiple sets of n-bit inputs
  */
-module NAND_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
+module mXnBit_NAND #( parameter WIDTH = 4, parameter SETS = 2 ) (
     input wire [ SETS*WIDTH-1:0 ] in1_packed,
     input wire [ SETS*WIDTH-1:0 ] in2_packed,
     output wire [ SETS*WIDTH-1:0 ] out_packed
@@ -207,7 +207,7 @@ module NAND_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
     Set_Check #( .SETS( SETS ) ) set_check ( );
 
     // Unpack, instantiate NAND operation (3), and pack the output
-    UnpackPack_mXnbits #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 3 ) ) nand_pack_unpack (
+    mXnBit_UnpackPack #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 3 ) ) nand_pack_unpack (
         .in1_packed( in1_packed ),
         .in2_packed( in2_packed ),
         .out_packed( out_packed )
@@ -215,13 +215,13 @@ module NAND_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
 endmodule
 
 /*
- * NOR_mXnBits
+ * mXnBits_NOR
  *
  * Purpose:
- * - Wraps with the UnpackPack_mXnbits module to perform the NOR operation
+ * - Wraps with the mXnBits_UnpackPack module to perform the NOR operation
  *   on multiple sets of n-bit inputs
  */
-module NOR_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
+module mXnBit_NOR #( parameter WIDTH = 4, parameter SETS = 2 ) (
     input wire [ SETS*WIDTH-1:0 ] in1_packed,
     input wire [ SETS*WIDTH-1:0 ] in2_packed,
     output wire [ SETS*WIDTH-1:0 ] out_packed
@@ -230,7 +230,7 @@ module NOR_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
     Set_Check #( .SETS( SETS ) ) set_check ( );
 
     // Unpack, instantiate NOR operation (4), and pack the output
-    UnpackPack_mXnbits #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 4 ) ) nor_pack_unpack (
+    mXnBit_UnpackPack #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 4 ) ) nor_pack_unpack (
         .in1_packed( in1_packed ),
         .in2_packed( in2_packed ),
         .out_packed( out_packed )
@@ -238,13 +238,13 @@ module NOR_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
 endmodule    
 
 /*
- * XOR_mXnBits
+ * mXnBits_XOR
  * 
  * Purpose:
- * - Wraps with the UnpackPack_mXnbits module to perform the XOR operation
+ * - Wraps with the mXnBits_UnpackPack module to perform the XOR operation
  *   on multiple sets of n-bit inputs
  */
-module XOR_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
+module mXnBit_XOR #( parameter WIDTH = 4, parameter SETS = 2 ) (
     input wire [ SETS*WIDTH-1:0 ] in1_packed,
     input wire [ SETS*WIDTH-1:0 ] in2_packed,
     output wire [ SETS*WIDTH-1:0 ] out_packed
@@ -253,7 +253,7 @@ module XOR_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
     Set_Check #( .SETS( SETS ) ) set_check ( );
 
     // Unpack, instantiate XOR operation (5), and pack the output
-    UnpackPack_mXnbits #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 5 ) ) xor_pack_unpack (
+    mXnBit_UnpackPack #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 5 ) ) xor_pack_unpack (
         .in1_packed( in1_packed ),
         .in2_packed( in2_packed ),
         .out_packed( out_packed )
@@ -261,13 +261,13 @@ module XOR_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
 endmodule
 
 /*
- * XNOR_mXnBits
+ * mXnBits_XNOR
  *
  * Purpose:
- * - Wraps with the UnpackPack_mXnbits module to perform the XNOR operation
+ * - Wraps with the mXnBits_UnpackPack module to perform the XNOR operation
  *   on multiple sets of n-bit inputs
  */
-module XNOR_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
+module mXnBit_XNOR #( parameter WIDTH = 4, parameter SETS = 2 ) (
     input wire [ SETS*WIDTH-1:0 ] in1_packed,
     input wire [ SETS*WIDTH-1:0 ] in2_packed,
     output wire [ SETS*WIDTH-1:0 ] out_packed
@@ -276,7 +276,7 @@ module XNOR_mXnBits #( parameter WIDTH = 4, parameter SETS = 2 ) (
     Set_Check #( .SETS( SETS ) ) set_check ( );
 
     // Unpack, instantiate XNOR operation (6), and pack the output
-    UnpackPack_mXnbits #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 6 ) ) xnor_pack_unpack (
+    mXnBit_UnpackPack #( .WIDTH( WIDTH ), .SETS( SETS ), .OP ( 6 ) ) xnor_pack_unpack (
         .in1_packed( in1_packed ),
         .in2_packed( in2_packed ),
         .out_packed( out_packed )

@@ -34,42 +34,42 @@ module testbench_mXnBits;
     /*
      * Instantiate each mXnBits gate
      */
-    NOT_mXnBits #( .WIDTH( WIDTH ), .SETS( SETS ) ) not_instance (
+    mXnBit_NOT #( .WIDTH( WIDTH ), .SETS( SETS ) ) not_instance (
         .in_packed( in1_packed ),
         .out_packed( NOT_out_packed )
     );
 
-    AND_mXnBits #( .WIDTH( WIDTH ), .SETS( SETS ) ) and_instance (
+    mXnBit_AND #( .WIDTH( WIDTH ), .SETS( SETS ) ) and_instance (
         .in1_packed( in1_packed ),
         .in2_packed( in2_packed ),
         .out_packed( AND_out_packed )
     );
 
-    OR_mXnBits #( .WIDTH( WIDTH ), .SETS( SETS ) ) or_instance (
+    mXnBit_OR #( .WIDTH( WIDTH ), .SETS( SETS ) ) or_instance (
         .in1_packed( in1_packed ),
         .in2_packed( in2_packed ),
         .out_packed( OR_out_packed )
     );
 
-    NAND_mXnBits #( .WIDTH( WIDTH ), .SETS( SETS ) ) nand_instance (
+    mXnBit_NAND #( .WIDTH( WIDTH ), .SETS( SETS ) ) nand_instance (
         .in1_packed( in1_packed ),
         .in2_packed( in2_packed ),
         .out_packed( NAND_out_packed )
     );
 
-    NOR_mXnBits #( .WIDTH( WIDTH ), .SETS( SETS ) ) nor_instance (
+    mXnBit_NOR #( .WIDTH( WIDTH ), .SETS( SETS ) ) nor_instance (
         .in1_packed( in1_packed ),
         .in2_packed( in2_packed ),
         .out_packed( NOR_out_packed )
     );
 
-    XOR_mXnBits #( .WIDTH( WIDTH ), .SETS( SETS ) ) xor_instance (
+    mXnBit_XOR #( .WIDTH( WIDTH ), .SETS( SETS ) ) xor_instance (
         .in1_packed( in1_packed ),
         .in2_packed( in2_packed ),
         .out_packed( XOR_out_packed )
     );
 
-    XNOR_mXnBits #( .WIDTH( WIDTH ), .SETS( SETS ) ) xnor_instance (
+    mXnBit_XNOR #( .WIDTH( WIDTH ), .SETS( SETS ) ) xnor_instance (
         .in1_packed( in1_packed ),
         .in2_packed( in2_packed ),
         .out_packed( XNOR_out_packed )

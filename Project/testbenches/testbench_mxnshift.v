@@ -32,14 +32,14 @@ module testbench_mXnShift;
     /*
      * Instantiate the mXnBits_Shift module for logical and arithmetic shifts
      */
-    New_mXnBits_Shift #( .WIDTH( WIDTH ), .SETS( SETS ), .OP( 0 ) ) shift_logical(
+    mXnBits_Shift #( .WIDTH( WIDTH ), .SETS( SETS ), .OP( 0 ) ) shift_logical(
         .in_packed( in_packed ),
         .shift_packed( shift_packed ),
         .out_packed( out_packed_logical ),
         .overflow_packed( overflow_packed_logical )
     );
 
-    New_mXnBits_Shift #( .WIDTH( WIDTH ), .SETS( SETS ), .OP( 1 ) ) shift_arithmetic(
+    mXnBits_Shift #( .WIDTH( WIDTH ), .SETS( SETS ), .OP( 1 ) ) shift_arithmetic(
         .in_packed( in_packed ),
         .shift_packed( shift_packed ),
         .out_packed( out_packed_arithmetic ),

@@ -23,14 +23,14 @@ module testbench_nShift;
     wire [ WIDTH-1:0 ] out_logical, out_arithmetic, overflow_logical, overflow_arithmetic;
 
     // Logical shift right
-    New_nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) shift_logical(
+    nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) shift_logical(
         .in( in ),
         .shift( shift ),
         .out( out_logical ),
         .overflow( overflow_logical )
     );
 
-    New_nBit_Shift #( .WIDTH( WIDTH ), .OP( 1 ) ) shift_arithmetic(
+    nBit_Shift #( .WIDTH( WIDTH ), .OP( 1 ) ) shift_arithmetic(
         .in( in ),
         .shift( shift ),
         .out( out_arithmetic ),
