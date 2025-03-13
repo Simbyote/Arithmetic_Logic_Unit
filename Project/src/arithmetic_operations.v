@@ -228,7 +228,7 @@ module Equal_To #( parameter WIDTH = 4) (
     output wire out
 );
     // Internal wires
-    wire [ WIDTH-1:0 ] less_than_result, greater_than_result; 
+    wire less_than_result, greater_than_result; 
     wire final_borrow;
 
     // Determine if in1 is less than in2
@@ -429,11 +429,11 @@ module Multiplier #( parameter WIDTH = 4 ) (
             // Internal wires
             wire [ WIDTH-1:0 ] temp_low, temp_high_overflow, temp_high_carry, temp_overflow;
             wire [ WIDTH-1:0 ] shift, shift_result;
-            wire [ WIDTH-2:1 ] shift_amt;
+            wire [ WIDTH-2:0 ] shift_amt;
             wire final_carry;
 
-            assign shift_amt = i;
-            assign shift = { 1'b0, shift_amt, 1'b0 };
+            assign shift_amt = $unsigned(i) << 1;
+            assign shift = { shift_amt, 1'b0 };
 
             // Shift the multiplicand by the current loop index
             nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) shift_instance (
@@ -462,7 +462,7 @@ module Multiplier #( parameter WIDTH = 4 ) (
             // Add the carry from the low output to the high output
             Full_Adder #( .WIDTH( WIDTH ) ) adder_final_instance (
                 .in1( temp_high_overflow ),
-                .in2( final_carry ),
+                .in2( { { ( WIDTH-1 ){ 1'b0 } }, final_carry } ),
                 .out( temp_high_carry ),
                 .final_carry(  )
             );
@@ -495,7 +495,7 @@ module Division_Decomposition #( parameter WIDTH = 4 ) (
             assign shift_amt = i;
             assign shift = { 1'b0, shift_amt, 1'b0 };
             nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) shift_instance (
-                .in( 1'b1 ),
+                .in( { { ( WIDTH-1 ){ 1'b0 } }, 1'b1 } ),
                 .shift( shift ),
                 .out( shift_result ),
                 .overflow(  )
@@ -514,7 +514,7 @@ module Division_Alignment #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out,
-    output wire [ WIDTH-1:0 ] out_pos
+    output wire [ WIDTH-2:0 ] out_pos
 );
     // Internal wires
     wire [ WIDTH-1:0 ] in1_lead, in2_lead;
@@ -542,8 +542,8 @@ module Division_Alignment #( parameter WIDTH = 4 ) (
     );
 
     // Subtract the positions to determine the shift amount
-    Full_Subtractor #( .WIDTH( WIDTH ) ) subtractor_instance (
-        .in1( in1_pos ),
+    Full_Subtractor #( .WIDTH( WIDTH-1 ) ) subtractor_instance (
+        .in1( { in1_pos } ),
         .in2( in2_pos ),
         .out( temp_pos ),
         .final_borrow( final_borrow )
@@ -552,7 +552,7 @@ module Division_Alignment #( parameter WIDTH = 4 ) (
     // Shift the divisor to align with the dividend
     nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) shift_instance (
         .in( in2 ),
-        .shift( { 1'b0, temp_pos, 1'b0 } ),
+        .shift( { temp_pos, 1'b0 } ),
         .out( aligned_in2 ),
         .overflow(  )
     );
@@ -572,7 +572,6 @@ module Division_Alignment #( parameter WIDTH = 4 ) (
 
     assign out = overshoot ? correct_aligned_in2 : aligned_in2;
     assign out_pos = overshoot ? correct_shift_amt : temp_pos;
-
 endmodule
 
 module Divider #( parameter WIDTH = 4 ) (
@@ -581,12 +580,16 @@ module Divider #( parameter WIDTH = 4 ) (
     output wire [ WIDTH-1:0 ] out,
     output wire [ WIDTH-1:0 ] remainder
 );
-    // Collect the partial quotient and remainder
+    wire [ WIDTH-1:0 ] expected_quotient;
+    assign expected_quotient = in2 != 0 ? in1 / in2 : { WIDTH{ 1'b0 } };
+
     wire [ WIDTH-1:0 ] partial_quotient[ WIDTH-1:0 ];
     wire [ WIDTH-1:0 ] partial_remainder[ WIDTH-1:0 ];
 
-    // Internal wires
-    wire [ WIDTH-1:0 ] in2_aligned, pos;
+    wire [ WIDTH-1:0 ] in2_aligned;
+    wire [ WIDTH-2:0 ] pos;
+
+    // This subtractor uses the shift result to subtract from 'in1'
     wire [ WIDTH-1:0 ] subtractor_result;
     wire final_borrow;
 
@@ -612,32 +615,35 @@ module Divider #( parameter WIDTH = 4 ) (
         .final_borrow( final_borrow )
     );
 
+
+    assign perform_subtraction = final_borrow ? 1'b0 : 1'b1;
+
     // For the quotient, align the first bit based on what the shift amount was and place it there in the quotient
     nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) shift_quotient_instance (
-        .in( 1'b1 ),
-        .shift( { 1'b0, pos, 1'b0 } ),
+        .in( { {(WIDTH-1){1'b0}}, 1'b1 } ),
+        .shift( { pos, 1'b0 } ),
         .out( set_quotient ),
         .overflow(  )
     );
 
-    wire zero_divisor = ( in2 == 0 );   // Is the divisor zero?
-    wire small_dividend = ( in1 < in2 );    // Is the dividend smaller than the divisor?
+    wire zero = ( in2 == 0 );
+    wire less_than = ( in1 < in2 );
 
-    assign perform_subtraction = final_borrow ? 1'b0 : 1'b1;    // Can we subtract?
     
-    // Assign initial quotient
+    // Assign the quotient to the shifted position if subtraction is valid
     assign partial_quotient[ 0 ] = perform_subtraction
-                                && !zero_divisor
-                                && !small_dividend
+                                && !zero
+                                && !less_than
                                 ? set_quotient 
                                 : { WIDTH{ 1'b0 } };
-    // Assign initial remainder
-    assign partial_remainder[0] = zero_divisor
+    // Set the shift result as the initial remainder if subtraction is valid
+    assign partial_remainder[0] = zero
                               ? { WIDTH{ 1'b0 } } 
-                              : ( perform_subtraction 
-                                    && !small_dividend
-                                    ? subtractor_result 
-                                    : in1 );
+                              : ( perform_subtraction && !less_than 
+                                 ? subtractor_result 
+                                 : in1 );
+
+
     genvar i;
     generate
         for( i = 1; i < WIDTH; i = i + 1 ) begin : division_loop
@@ -650,7 +656,7 @@ module Divider #( parameter WIDTH = 4 ) (
             wire [ WIDTH-1:0 ] new_subtractor_result;
             wire new_final_borrow;
 
-            wire new_perform_subtraction;
+            wire new_performance_subtraction;
 
             wire [ WIDTH-1:0 ] new_set_quotient;
 
@@ -668,27 +674,26 @@ module Divider #( parameter WIDTH = 4 ) (
                 .final_borrow( new_final_borrow )
             );
 
+            assign new_performance_subtraction = new_final_borrow ? 1'b0 : 1'b1;
+
             nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) new_shift_quotient_instance (
-                .in( 1'b1 ),
-                .shift( { 1'b0, new_pos, 1'b0 } ),
+                .in( { {(WIDTH-1){1'b0}}, 1'b1 } ),
+                .shift( { new_pos, 1'b0 } ),
                 .out( new_set_quotient ),
                 .overflow(  )
             );
 
-            wire new_small_dividend = ( partial_remainder[ i - 1 ] < in2 );
+            wire divisor_check = ( partial_remainder[ i - 1 ] < in2 );
 
-            assign new_perform_subtraction = new_final_borrow ? 1'b0 : 1'b1;
-
-
-            assign partial_quotient[ i ] = new_perform_subtraction 
-                                        && !zero_divisor
-                                        && !new_small_dividend 
+            assign partial_quotient[ i ] = new_performance_subtraction 
+                                        && !zero 
+                                        && !divisor_check 
                                         ? partial_quotient[ i - 1 ] + new_set_quotient 
                                         : partial_quotient[ i - 1 ];
 
-            assign partial_remainder[ i ] = new_perform_subtraction 
-                                        && !zero_divisor 
-                                        && !new_small_dividend
+            assign partial_remainder[ i ] = new_performance_subtraction 
+                                        && !zero 
+                                        && !divisor_check 
                                         ? new_subtractor_result 
                                         : partial_remainder[ i - 1 ];
         end
