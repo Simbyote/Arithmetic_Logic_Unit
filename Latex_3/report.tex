@@ -1,0 +1,147 @@
+\documentclass[12pt]{article}
+
+\usepackage{fancyhdr}   
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{graphicx}    % include graphics
+\usepackage{natbib}         
+\usepackage{doi}    
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage[american]{circuitikz}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\setcitestyle{aysep={,}}
+
+% Header information
+\newcommand{\Group}{Group Uno}
+\newcommand{\Mike}{Mike Orduna}
+\newcommand{\Noah}{Noah Murphy}
+\newcommand{\Alex}{Alex Livingston}
+\newcommand{\Class}{CS 3339: Computer Architecture}
+\newcommand{\ReportPart}{Part Three}
+\newcommand{\School}{Ingram School of Engineering}
+
+\title{Project Report: \ReportPart}
+\author{
+    \textbf{\Class} \\
+    \\
+    \textbf{\Group:} 
+    \\
+    \Mike\\
+    \Noah\\
+    \Alex\\
+    \\
+    \\
+    \School
+}
+\date{\today}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+\hypersetup{hidelinks}  % remove colored boxes around links
+
+\begin{document}
+\maketitle
+
+\newpage
+\tableofcontents
+\thispagestyle{empty}
+\pagestyle{fancy}
+
+\newpage
+\setcounter{page}{1}
+
+\section{Abstract}
+
+\section{Introduction}
+
+\section{Controller Design}
+
+\subsection{Separation of Concerns}
+
+\section{Testbench Development}
+
+\section{Controller Implementation}
+
+\subsection{Adder Controller}
+
+\section{Subtractor Controller}
+
+\section{Multiplier Controller}
+
+\section{Divider Controller}
+
+\section{Comparison Controllers}
+
+\subsection{Waveform Analysis}
+
+\section{Challenges and Solutions}
+
+\section{Conclusion}
+
+\section{Thoughts and Notes}
+\begin{itemize}
+    \item \textbf{How Does a Controller Work?}: The controller circuit that will control the ALU operations will need to be split into its distinct operations.
+        These operations can be distinguised as the ALU\_Controller and the Sub\_Controllers. The ALU\_Controller will maintain responsibility for the overall
+        flow of the ALU operations, using an opcode to determine which operation to perform. The Sub\_Controllers will be responsible for the individual
+        operations themselves and return their associated results to the ALU\_Controller.
+    \item \textbf{Refactoring of Current Implementations}: Because we will need to implement \textit{sequential logic} for the controller, we will need to revisit
+        out implementations for our ALU modules and develop them similarly to how we developed out \textit{Division\_Core} module. The main method that is used in
+        the \textit{Division\_Core} module is that it processes its operation \textit{one step at a time} as opposed to all at once (like how it is currently
+        developed at the time of writing this).
+    \item \textbf{Posedge Design}: The controller will need to run a clock and a reset signal to ensure operations are performed sequentially. Posedges are used
+        to control the overall change in inputs of the controller. Applying a posedge requires a careful consideration for where they are placed in a system to
+        both maximize efficiency and ensure that the system is functioning as intended. The general rules to follow for when to add a posedge are:
+        \begin{itemize}
+            \item \textbf{Posedge Between Input Change} \item \textbf{Posedge Between Control Transitions} \item \textbf{Posedge After Setting Done Signals}
+        \end{itemize}
+        Where a Macro is used to generalize the testing for the different controllers to be developed.
+    \item \textbf{Missing Final Bit in Multiplier}: Refactoring of the current Multiplier was necessary so that it can run sequentially rather than all at once.
+        However, a few bugs were encountered while trying to implement this new feature. The main issue with the final product was that the control logic was 
+        performing what seemed like \textit{one extra step} in the multiplication step. More specifically, this extra step was found to be at every instance of
+        in2 where its value was at its maximum. This caused an incorrect final output to be produced. What was found to be the source of the issue was that the
+        FSM was \textit{conditionally updating the output registers} only when \textit{is\_equal} was true, otherwise it would skip the assignment. As a result,
+        the final clock cycle would transition into the DONE state without properly updating the output registers for the final output. A resolution was developed
+        that reshaped the logic in the \textit{STEP} and \textit{DONE} states, moving the final assignment out of DONE and into the STEP state while adding additional
+        logic checks to ensure that the output registers were properly updated when they needed to be.
+    \item {Timing Mismatch in Addition}: Refactoring the Adder Module was similarly done as the Multiplier Module. However, a bug was encountered where the output
+        of the adder was shifted up the output register. This was found to be due to the timing of the output register assignment, where the output register was
+        being assigned the value of the output of the adder before the adder had finished its operation. To resolve this issue, we split the function into two 
+        different clock cycles, one for the addition and one for the assignment of the output register. This allowed the adder to finish its operation before the
+        output register was assigned the value of the output of the adder.
+    
+
+\end{itemize}
+
+\end{document}
+

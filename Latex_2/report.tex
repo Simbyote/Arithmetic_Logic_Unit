@@ -1,0 +1,607 @@
+\documentclass[12pt]{article}
+
+\usepackage{fancyhdr}   
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{graphicx}    % include graphics
+\usepackage{natbib}         
+\usepackage{doi}    
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage[american]{circuitikz}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\setcitestyle{aysep={,}}
+
+% Header information
+\newcommand{\Group}{Group Uno}
+\newcommand{\Mike}{Mike Orduna}
+\newcommand{\Noah}{Noah Murphy}
+\newcommand{\Alex}{Alex Livingston}
+\newcommand{\Class}{CS 3339: Computer Architecture}
+\newcommand{\ReportPart}{Part Two}
+\newcommand{\School}{Ingram School of Engineering}
+
+\title{Project Report: \ReportPart}
+\author{
+    \textbf{\Class} \\
+    \\
+    \textbf{\Group:} 
+    \\
+    \Mike\\
+    \Noah\\
+    \Alex\\
+    \\
+    \\
+    \School
+}
+\date{\today}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+\hypersetup{hidelinks}  % remove colored boxes around links
+
+\begin{document}
+\maketitle
+
+\newpage
+\tableofcontents
+\thispagestyle{empty}
+\pagestyle{fancy}
+
+\newpage
+\setcounter{page}{1}
+\section{Abstract}
+This report presents the design philosophy, implementation, and testing of \textbf{Logic Gates} and \textbf{Arithmetic Operations} in Verilog. The project outlines 
+hierarchical and modular design principles to construct scalable circuits. Key challenges such as debugging multi-bit arithmetic and optimizing 
+testbenches were addressed using parametric macros and systematic verification. The report provides insights into designing an ALU and lays a 
+foundation for further hardware optimization in future iterations.
+
+\section{Introduction}
+The goal of this project is to explore the design and testing of fundamental digital circuits, with a focus on constructing bit-width logic gates
+and arithmetic operations in the HDL Verilog. These circuits to be developed are the fundamental building blocks for an arithmetic logic unit, or
+ALU, and will help perform complex mathematical operations in later designs. However, the implementation of bit-width logic gates and arithmetic 
+operators first requires a foundation of basic logic gates to be developed to make the development of more complex modules more streamlined and
+easier to debug. Designs for these components are straightforward and are discussed more in detail in the previous report labeled:
+\textbf{Project Report: Part One}.
+
+\medskip
+After designing, implementing, and testing the one-bit gates, the bit-width logic gates are then developed. Rigorous testing is done to the
+bit-width logic gates to ensure that they accurately capture their outputs in accordance with what is expected via their truth tables and algebraic
+equivalences. The design of the arithmetic operations is then developed which include the four basic mathematical operations:
+\begin{itemize}
+    \item \textbf{Addition}
+    \item \textbf{Subtraction}
+    \item \textbf{Multiplication}
+    \item \textbf{Division}
+\end{itemize}
+
+A dedicated testbench is used to test the operations listed and furthermore, the GTKWave tool is used to analyze the simulation waveforms generated
+from testing. With successful testing and verification of the designed components, the mathematical operations provide a robust method of analyzing
+different bit-widths.
+
+\section{Design Philosophy}
+Before developing individual logic components, we established core design philosophies to ensure modularity, reusability, and scalability. These 
+principles guided the construction of the logic gates and arithmetic operations and are outlined below:
+\begin{itemize}
+    \item \textbf{Hierarchical Design}: The design should focus on building upon other modules
+    \item \textbf{Modular Design}: The design should split its functions into working parts
+    \item \textbf{Scalable Design}: The design should be capable of growth
+\end{itemize}
+
+Adding too many restrictions or rules to the design of hardware could introduce too much overhead and since the project is used as a learning
+opportunity, the philosophies are kept short and concise. By following these philosophies, the development process can be kept organized and allow
+for easier debugging from unexpected results during simulation runtimes.
+
+\subsection{nBit Design}
+To prevent a limited bit-width size across the hardware, modules are developed and designed to handle a \textbf{WIDTH}, or a specified bit-width that
+can be passed into it. Modules created using this WIDTH parameter allow for the processing of a dynamic bit-width, resulting in a more robust module.
+
+\section{Behind the Arithmetic}
+To create an understanding of how computer operations are performed, the Verilog code developed delves under the hood of the four main arithmetic operations:
+\begin{itemize}
+    \item \textbf{Adder}: Determines the sum of two numbers
+    \item \textbf{Subtractor}: Determines the difference between two numbers
+    \item \textbf{Multiplier}: Determines the product of two numbers
+    \item \textbf{Divider}: Determines the quotient of two numbers and their remainder
+\end{itemize}
+
+Each operation produces its respective mathematical results through a series of different logic gates. When discussing how these operations are
+performed, it is important to note that "under the hood" refers to \textbf{how} a computer performs these operations and not necessarily \textbf{why} they
+are performed.
+
+A crucial step before delving into arithmetic operations is understanding how nBit gates function and their role in arithmetic computation.
+
+\subsection{nBit Gates Implementation}
+A brief introduction on how the nBit modules are designed is provided to give a better understanding on how the arithmetic operations use these modules.
+
+\medskip
+To begin, the basic logic gates are expanded upon in the \textbf{nBit\_gates.v} file. The file does this using 2 main methods, referred to as modules:
+\begin{itemize}
+    \item \textbf{Gate Instantiator}: A control module that is used to instantiate the selected gate based on an OP value that is passed from an 
+        \textbf{nBit} gate module.
+    \item \textbf{nBit Gate}: A module that instantiates its corresponding gate.
+\end{itemize}
+
+Below is the code for both of these modules, with descriptive comments describing their purpose throughout each section of the module:
+\begin{lstlisting}[language=Verilog]
+/*
+ * The control unit that directs the flow of the gates to be instantiated
+ * This streamlines the different gates that need to be instantiated and
+ * helps to reduce code redundancy by focusing the functions in one area.
+ */
+module Gate_Instantiator #( parameter WIDTH = 4 , parameter OP = 0 ) (
+    input wire [ WIDTH-1:0 ] in1,
+    input wire [ WIDTH-1:0 ] in2,
+    output wire [ WIDTH-1:0 ] out
+);
+    // Gates are instantiated based on an OP value, passed by the gate module
+    genvar i;
+    generate
+        for( i = 0; i < WIDTH; i = i + 1 ) begin : gate_loop
+            case( OP )
+                0: begin
+                    NOT not_instance (
+                        .in( in1[ i ] ),
+                        .out( out[ i ] )
+                    );
+                end
+                1: begin
+                    AND and_instance (
+                        .in1( in1[ i ] ),
+                        .in2( in2[ i ] ),
+                        .out( out[ i ] )
+                    );
+                end
+                ...
+                // Other gates are similarly instantiated
+                ...
+            endcase
+        end
+    endgenerate
+endmodule
+\end{lstlisting}
+
+\begin{lstlisting}[language=Verilog]
+/*
+ * A module that instantiates its corresponding gate
+ */
+module nBit_AND #( parameter WIDTH = 4 ) (
+    input wire [ WIDTH-1:0 ] in1,
+    input wire [ WIDTH-1:0 ] in2,
+    output wire [ WIDTH-1:0 ] out
+);
+    // Instantiate the AND gate by passing an OP of 1
+    Gate_Instantiator #(.WIDTH( WIDTH ), .OP( 1 ) ) and_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( out )
+    );
+endmodule
+\end{lstlisting}
+
+The purpose of the \textbf{nBit} gates and the \textbf{Gate Instantiator} is to provide a method for a larger width of bits to be processed at one time
+while providing a relationship between the bits. Each gate is instantiated in a similar fashion, with each OP value passed into the \textbf{Gate Instantiator} 
+module changing according to the gate that needs to be instantiated at that time. The idea of the design was to create a separation of concerns between the
+instantiation of the gates and the actual gates themselves. Splitting the process into distinct tasks reduces the redundancy the modules would experience 
+had the gates be instantiated within the \textbf{nBit} gate modules themselves.
+
+\subsection{Arithmetic Shifter Implementation}
+The \textbf{Arithmetic Shifter} module plays a crucial role in arithmetic operations, particularly in multiplication and division, as it enables efficient bitwise 
+manipulation. As discussed in the previous report, the shifter takes in two inputs:
+\begin{itemize}
+    \item \textbf{in}: The input to be shifted
+    \item \textbf{shift}: The control input that dictates how the input is to be shifted
+\end{itemize}
+
+The control input is decomposed into 3 parts:
+\begin{itemize}
+    \item \textbf{shift\_dir}: The MSB which dictates the direction of the shift
+    \item \textbf{fill}: The LSB which dictates the fill of the shifted bits
+    \item \textbf{shift\_amt}: The remaining bits control the shift amount
+\end{itemize}
+
+Furthermore, the module is designed to handle two types of shifts:
+\begin{itemize}
+    \item \textbf{Logical Shift}: Shifts the input bits and fills the shifted bits with the fill value
+    \item \textbf{Arithmetic Shift}: Shifts the input bits and fills the shifted bits with the sign bit
+\end{itemize}
+
+The code for the \textbf{Arithmetic Shifter} module is shown below:
+\begin{lstlisting}[language=Verilog]
+/*
+ * A module that takes two inputs:
+ * - The input to be shifted
+ * - The control input that dictates how the input is to be shifted
+ */
+module nBit_Shift #( parameter WIDTH = 4, parameter OP = 0 ) (
+    input wire [ WIDTH-1:0 ] in,
+    input wire [ WIDTH-1:0 ] shift,
+    output reg [ WIDTH-1:0 ] out,
+    output reg [ WIDTH-1:0 ] overflow
+);
+    // Wires are created to decompose the shift input
+    wire shift_dir = shift[ 0 ];
+    wire [ WIDTH-2:0 ] shift_amt = shift[ WIDTH-2:1 ];
+    wire fill = shift[ WIDTH-1 ];
+
+    always @(*) begin
+        // Initializes the outputs (necessary for an output in an always block)
+        out = { WIDTH{ 1'b0 } };
+        overflow = { WIDTH{ 1'b0 } };
+        if( OP == 0 ) begin
+            if( shift_dir == 1'b0 ) begin
+                out = ( in << shift_amt ) | ( fill << ( shift_amt - 1 ) );
+                overflow = in >> ( WIDTH - shift_amt );
+            end
+            else begin
+                out = ( in >> shift_amt ) | ( fill << ( WIDTH - shift_amt ) );
+                overflow = in & ( ( 1 << shift_amt ) - 1 );
+            end
+        end
+        else if( OP == 1 ) begin
+            if( shift_dir == 1'b0 ) begin
+                out = in << shift_amt;
+                overflow = in >> ( WIDTH - shift_amt );
+            end
+            else begin
+                out = $signed( in ) >>> shift_amt;
+                overflow = in & ( ( 1 << shift_amt ) - 1 );
+            end
+        end
+    end
+endmodule
+\end{lstlisting}
+
+The Arithmetic Shifter enables flexible bitwise shifting and filling, adapting dynamically to different computational needs. Furthermore, the shifter can 
+be briefly described as a tool that can either take the \textbf{square} or \textbf{square root} of an input.
+
+\section{Testbench Development}The development for the testing environment follows a similar fashion to what was discussed in the previous report. A major improvement 
+over the previous testbench design is the introduction of parametric macros, allowing streamlined testing across multiple modules without redundancy. The example below 
+showcases this improvement:
+\begin{lstlisting}
+    `define GENERIC_HALF( REG1, REG2 ) \
+        begin \
+            REG1 = { 1'b0 }; \
+            repeat( 2 ) begin \
+                REG2 = { 1'b0 }; \
+                repeat( 2 ) begin \
+                    #10; \
+                    REG2 = REG2 + 1; \
+                end \
+                REG1 = REG1 + 1; \
+            end \
+        end
+
+    `define GENERIC_FULL( REG1, REG2 ) \
+        begin \
+            REG1 = { WIDTH{ 1'b0 } }; \
+            repeat( BIT_STATE ) begin \
+                REG2 = { WIDTH{ 1'b0 } }; \
+                repeat( BIT_STATE ) begin \
+                    #10; \
+                    REG2 = REG2 + 1; \
+                end \
+                REG1 = REG1 + 1; \
+            end \
+            REG1 = { WIDTH{ 1'b0 } }; \
+            REG2 = { WIDTH{ 1'b0 } }; \
+        end
+\end{lstlisting}
+
+The testbench utilizes the macros \textbf{GENERIC\_HALF} and \textbf{GENERIC\_FULL} to test any variation of modules, so long as they either have one input
+or two inputs. This significantly reduced the repetition many other implementations would experience and helped to streamline the functionality of the tests
+in one, centralized location. The actual testing of each individual module however is developed in a similar fashion as the previous report. An example of
+the testbench for the \textbf{Half Adder} module is shown below:
+\begin{lstlisting}[language=Verilog]
+    // Half Adder
+    reg half_in1, half_in2;
+    wire half_adder_out, half_adder_carry_out;
+
+    Half_Adder adder_instance (
+        .in1( half_in1 ),
+        .in2( half_in2 ),
+        .out( half_adder_out ),
+        .carry_out( half_adder_carry_out )
+    );
+\end{lstlisting}
+
+Every module is developed in a similar fashion and when testing is done, the registers are passed into the generic tests such like:
+\begin{lstlisting}[language=Verilog]
+    initial begin
+        $dumpfile( "waveform6.vcd" );
+        $dumpvars( 0, testbench_arithmeticOP );
+
+        `GENERIC_HALF( half_in1, half_in2 );
+        
+        #50 $finish;
+    end
+\end{lstlisting}
+
+One last note is that the timescale for the testbench is set to 1ns, which has been a standard for the project. This will be important when analyzing the
+waveforms using the GTKWave tool.
+
+\section{Half \& Full Adder}
+The first series of arithmetic operations to be developed are the \textbf{Half Adder} and the \textbf{Full Adder}. The modules provide distinct methods of
+handling single-bit addition and multi-bit addition, respectively. Using fundamental logic gates, the adders are designed to provide the sum of two inputs
+and a carry out bit if the sum exceeds the bit-width of the input.
+
+\subsection{Half Adder}
+The \textbf{Half Adder} is the simplest form of the adding function that a computer can perform. It takes two inputs and outputs their sum, with a carry bit if the
+sum exceeds the width of the bit. For instance, adding single bits together can yield four possible results:
+\begin{figure}[h]
+    \centering
+    \begin{tabular}{|c|c|c|}
+        \hline
+        \textbf{A} & \textbf{B} & \textbf{Sum} \\
+        \hline
+        0 & 0 & 0 \\
+        0 & 1 & 1 \\
+        1 & 0 & 1 \\
+        1 & 1 & 0 \\
+        \hline
+    \end{tabular}
+    \caption{Truth Table for Half Adder}
+    \label{fig:half_adder_table}
+\end{figure}
+
+The truth table in figure \ref{fig:half_adder_table} can be decomposed into three main cases:
+\begin{itemize}
+    \item \textbf{Adding Two Low Bits}: Where the sum is 0 and the carry bit is 0
+    \item \textbf{Adding a High and Low Bit}: Where the sum is 1 and the carry bit is 0
+    \item \textbf{Adding Two High Bits}: Where the sum is 0 and the carry bit is 1
+\end{itemize}
+
+Using these cases, the half adder can be represented by a logic diagram that shows the relationship between the inputs and outputs:
+\begin{figure}[H]
+    \centering
+    \begin{circuitikz}
+        \draw (0,4) node[xor port] (xorone) {}
+        (0,2.5) node[and port] (and){}
+        (xorone.in 1) node[left=1cm] (a) {A}
+        (xorone.in 2) node[left=1cm] (b) {B}
+        (xorone.out) node[right=.2cm] (out) {Sum}
+        (and.out) node[right=.2cm] (carry) {Carry}
+        
+        (a.east) to[short,-*] (xorone.in 1) |- (and.in 1)
+        (b.east) to[short,-*] ($(b.east)!.5!(xorone.in 2)$) coordinate (branch)
+            -- (xorone.in 2)
+        (branch) |- (and.in 2);  
+        \end{circuitikz}
+    \caption{Half Adder Logic Diagram}
+    \label{fig:half_adder_logic}
+\end{figure}
+
+Referring to the logic diagram in figure \ref{fig:half_adder_logic}, the half adder is implemented using the XOR module and the AND module. The complete implementation
+of the code can be viewed in the \textbf{half adder code}, submitted in the \textbf{arithmetic\_operations.v} file.
+
+The development of the half adder allows for a central location for the logic of single bits. From this module, the full adder can be developed to handle
+multi-bit addition.
+
+\subsection{Full Adder}
+The \textbf{Full Adder} is an extension of the half adder, providing a method for adding two inputs of some bit-width together. Similar to the half adder, the full adder
+provides a sum and a carry out bit if the sum exceeds the bit-width of the input. The full adder can have a variable of combinations depending on the width
+of the input, but for the purposes of this project, the width is set to four bits. This means that there are sixteen possible combinations of inputs that
+can be added together. The truth table for the full adder follows the same logic as the half adder but with additional inputs, but the logic for full
+adder can be represented as a similar logic diagram as shown in figure \ref{fig:half_adder_logic}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/full_adder.png}
+    \caption{Full Adder Logic Diagram}
+    \label{fig:full_adder_logic}
+\end{figure}
+
+The \textbf{Full Adder} uses two half adders and an OR gate to perform its calculations for a bit-width of 2. For each bit added to the width, an additional half
+adder is added to the diagram. The complete implementation of the code can be viewed in the \textbf{full adder code}, submitted in the \textbf{arithmetic\_operations.v}
+file.
+
+Using previously developed modules, the full adder is capable of adding a variable width of bits together. The \textbf{Full Adder} module is comprised of one major
+function: the addition loop. This loop iterates through the width of the input and adds the bits together, storing the results in the \textbf{temp\_out} and
+\textbf{temp\_carry\_out} wires. The carry out bit is then added to the next bit in the loop, with the final carry out bit being stored in the \textbf{final\_carry}
+wire. By utilizing the half adders to compute the sum of the individual bits in an input and the OR gate to compute any carry out bits, the full adder is capable
+of adding a variable width of bits together.
+
+\section{Half \& Full Subtractor}
+The next series of arithmetic operations to be developed are the \textbf{Half Subtractor} and the \textbf{Full Subtractor}. The modules provide distinct methods
+of handling single-bit subtraction and multi-bit subtraction, respectively. Using fundamental logic gates, the subtractors are designed to provide the difference
+of two inputs and a borrow out bit if the difference exceeds the bit-width of the input.
+
+\subsection{Half Subtractor}
+The \textbf{Half Subtractor} is the simplest form of the subtracting function that a computer can perform. It takes two inputs and outputs their difference, with a
+borrow bit if the difference exceeds the bit-width of the input. For instance, subtracting single bits together can yield four possible results:
+\begin{figure}[h]
+    \centering
+    \begin{tabular}{|c|c|c|}
+        \hline
+        \textbf{A} & \textbf{B} & \textbf{Difference} \\
+        \hline
+        0 & 0 & 0 \\
+        0 & 1 & 1 \\
+        1 & 0 & 1 \\
+        1 & 1 & 0 \\
+        \hline
+    \end{tabular}
+    \caption{Truth Table for Half Subtractor}
+    \label{fig:half_subtractor_table}
+\end{figure}
+
+The truth table in figure \ref{fig:half_subtractor_table} can be decomposed into three main cases:
+\begin{itemize}
+    \item \textbf{Subtracting Two Low Bits}: Where the difference is 0 and the borrow bit is 0
+    \item \textbf{Subtracting a High and Low Bit}: Where the difference is 1 and the borrow bit is 0
+    \item \textbf{Subtracting Two High Bits}: Where the difference is 0 and the borrow bit is 1
+\end{itemize}
+
+Using these cases, the half subtractor can be represented by a logic diagram that shows the relationship between the inputs and outputs:
+\begin{figure}[H]
+    \centering
+    \begin{circuitikz}
+        \draw (0,4) node[xor port] (xorone) {}
+        (-.3,2.8) node[not port, scale=0.5] (not) {}
+        (2,2.52) node[and port] (and) {}
+        (xorone.in 1) node[left=1cm] (a) {A}
+        (xorone.in 2) node[left=1cm] (b) {B}
+        (xorone.out) node[right=.2cm] (out) {Difference}
+        (and.out) node[right=.2cm] (borrow) {Borrow}
+        
+        (a.east) to[short,-*] (xorone.in 1) |- (not.in)
+        (not.out) |- (and.in 1)
+        (b.east) to[short,-*] ($(b.east)!.5!(xorone.in 2)$) coordinate (branch)
+            -- (xorone.in 2)
+        (branch) |- (and.in 2);  
+        \end{circuitikz}
+    \caption{Half Adder Logic Diagram}
+    \label{fig:half_adder_logic}
+\end{figure}
+
+Referring to the logic diagram in figure \ref{fig:half_adder_logic}, the half subtractor is implemented using the XOR module, the AND module, and the NOT module.
+The complete implementation of the code can be viewed in the \textbf{half subtractor code}, submitted in the \textbf{arithmetic\_operations.v} file.
+
+The development of the half subtractor allows for a central location for the logic of single bits. From this module, the full subtractor can be developed to handle
+multi-bit subtraction.
+
+\subsection{Full Subtractor}
+Similar to the full adder, the \textbf{Full Subtractor} is an extension of the half subtractor, providing a method for subtracting two inputs of some bit-width together.
+The full subtractor provides a difference and a borrow out bit if the difference exceeds the bit-width of the input. The full subtractor can have a variable of
+combinations depending on the width of the input, but for the purposes of this project, the width is set to four bits. This means that there are sixteen possible
+combinations of inputs that can be subtracted together. The truth table for the full subtractor follows the same logic as the half subtractor but with additional
+inputs, but the logic for full subtractor can be represented as a similar logic diagram as shown in figure \ref{fig:half_adder_logic}.
+
+The \textbf{Full Subtractor} uses two half subtractors and an OR gate to perform its calculations for a bit-width of 2. For each bit subtracted from the width, an
+additional half subtractor is added to the diagram. The complete implementation of the code from the \textbf{full subtractor code} can be viewed from the submitted
+files under the \textbf{arithmetic\_operations.v} file.
+
+Unfortunately, the logic is very similar between the full adder and the full subtractor. The implementation of the full subtractor was unable to make use of a modified
+version of the full adder due to the nature of the subtraction operation. The addition of a not gate \textbf{in the middle} of the full subtractor prevented any
+sort of modification to be done to the full adder module. Nevertheless, both the implementation of the full adder and the full subtractor provide a methods for adding
+and subtracting a variable width of bits together.
+
+Another note is that the full subtractor is not capable of handling negative numbers as of yet. The exact implementation of negative numbers is not discussed in this
+report, but the full subtractor is capable of handling the subtraction of two positive numbers, which can be seen in the \textbf{Testbench Development} section.
+
+\section{Multiplier}
+The \textbf{Multiplier} is a module that takes two inputs and outputs their product in a high and low output. The multiplier is capable of multiplying two inputs
+of some bit-width together. Binary arithmetic performs multiplication in a series of steps that are repeated for as many bits as the input has. This process is
+referred to as the \textbf{shift and add} method and is how the design of the multiplier is implemented. Below are the steps an input goes through to be multiplied
+by another input:
+\begin{itemize}
+    \item \textbf{Step 1}: Two inputs are multiplied together
+    \item \textbf{Step 2.1}: For every high bit in the multiplier, the multiplicand is shifted to the left.
+    \item \textbf{Step 2.2}: For every low bit in the multiplier, the multiplicand is set to 0.
+    \item \textbf{Step 3}: After every bit in the multiplier is processed, the results are added together. The result is the product of the two inputs.
+\end{itemize}
+
+However, for a computer, the process of multiplication is not quite captured in these steps. Rather, the computer needs a few additional steps in between that
+calculate the product over a period of time. The complete implementation of the \textbf{Multiplier} module can be seen in the \textbf{multiplier code} submitted
+in the \textbf{arithmetic\_operations.v} file.
+
+The implementation above for the multiplier has a few key components that are used to calculate the product of two inputs:
+\begin{itemize}
+    \item \textbf{Partial Sums}: Two arrays are created that store the partial sums of the product over time
+    \item \textbf{Shift and Add Method}: The multiplicand is shifted to the left by the multiplier and added to the partial sum
+    \item \textbf{Shifter Module}: The multiplicand is shifted to the left by the multiplier
+    \item \textbf{Full Adder Module}: The low output is added to the shift result and the high output is added to the overflow from the shift result
+\end{itemize}
+
+This implementation is essentially how a computer performs multiplication such as using \textbf{*} in a programming language, although the nuances of the
+lowest level of the computer are not actually shown (aka the assembly code). However, the multiplier module highlights the level of complexity that is
+required to perform multiplication in a computer.
+
+\section{Divider}
+The \textbf{Divider} is a module that takes two inputs and outputs their quotient and remainder. The divider is capable of dividing two inputs of some bit-width
+together. Binary arithmetic performs division in a series of steps that are repeated for as many bits as the input has. This process is referred to as the
+\textbf{shift and subtract} method and is how the design of the divider is implemented. Below are the steps an input goes through to be divided by another input:
+\begin{itemize}
+    \item \textbf{Step 1}: Two inputs are divided together
+    \item \textbf{Step 2}: Align the MSB of the divisor with the MSB of the dividend
+    \item \textbf{Step 3}: Subtract the divisor from the dividend
+    \item \textbf{Step 4}: If the result is negative, shift the divisor to the right and add 0 to the quotient
+    \item \textbf{Step 5}: If the result is positive, shift the divisor to the right and add 1 to the quotient
+    \item \textbf{Step 6}: Replace the dividend with the result and repeat the process until the divisor is greater than the dividend
+\end{itemize}
+
+This is a general overview of how division is implemented when working with binary arithmetic. However, similar for the multiplier, the computer needs a few
+additional steps in between that calculate the quotient and remainder over a period of time.
+
+An important note to mention regarding the divider is that the implementation of the divider is split into 2 modules: the \textbf{Divider} module and the
+\textbf{Division\_Alignment} module. The \textbf{Divider} module is responsible for the actual division of the inputs, while the \textbf{Division\_Alignment} module
+is responsible for aligning the divisor with the dividend. The complete implementation of the \textbf{Divider} and the \textbf{Division\_Alignment} module are shown in
+the \textbf{divider code} and the \textbf{division alignment code} from the \textbf{arithmetic\_operations.v} file respectively.
+
+Unfortunately, the implementation of the divider is not as straightforward as the multiplier. Because of this, the divider is quite complex in its design
+and very verbose in its implementation. However, the divisors functions can be split into a few distinct parts:
+\begin{itemize}
+    \item \textbf{Partial Quotient and Remainder}: Two arrays are created that store the partial quotient and remainder of the division over time
+    \item \textbf{Division Alignment}: The divisor is aligned with the dividend based on the leading bits of the inputs
+    \item \textbf{Full Subtractor Module}: The aligned divisor is subtracted from the dividend to get the initial remainder
+    \item \textbf{Quotient Calculation}: The quotient is shifted based on the position of the leading bits of the inputs
+    \item \textbf{Division Loop}: The new dividend is then assigned based on the remainder and repeated until the divisor is greater than the dividend
+\end{itemize}
+
+\section{Challenges and Solutions}
+Capturing the essence of the arithmetic operations in a computer was a challenging task. The implementation of the arithmetic operations required a deep
+understanding of the logic gates and how they interact with each other. The development of the modules was a process that required a lot of trial and error
+to get the correct output. The challenges faced during the development of the arithmetic operations are as follows:
+\begin{itemize}
+    \item \textbf{Complexity of the Modules}: The arithmetic operations are complex in their design and implementation. The modules require a lot of logic
+    gates and wires to perform the calculations. This complexity made it difficult to understand how the modules worked and how they interacted with each other.
+    \item \textbf{Debugging the Modules}: Debugging the modules was a challenging task. The modules are designed to perform a series of calculations over time,
+    which made it difficult to pinpoint where the error was occurring. The use of testbenches and waveform analysis was essential in debugging the modules.
+    \item \textbf{Understanding the Logic Gates}: The arithmetic operations are built using logic gates such as AND, OR, XOR, and NOT. Understanding how these
+    gates work and how they interact with each other was essential in developing the modules. The logic gates are the building blocks of the arithmetic
+    operations and understanding how they work was crucial in the development process.
+\end{itemize}
+
+Despite the challenges faced during the development of the arithmetic operations, the solutions to these challenges were found through a combination of research,
+trial and error, and collaboration. The solutions to the challenges are as follows:
+\begin{itemize}
+    \item \textbf{Research}: Researching the logic gates and how they work was essential in understanding how the arithmetic operations were implemented. The
+    research provided valuable insights into how the modules were designed and how they interacted with each other.
+    \item \textbf{Trial and Error}: Trial and error was a key component in the development of the arithmetic operations. Testing different inputs and analyzing
+    the outputs was essential in understanding how the modules worked and how they could be improved.
+    \item \textbf{Collaboration}: Collaboration with peers was essential in developing the arithmetic operations. Working together to solve problems and share 
+    insights was crucial in overcoming the challenges faced during the development process.
+\end{itemize}
+
+\section{Conclusion}
+The development of the arithmetic operations was a challenging but rewarding task. The implementation of the arithmetic operations required a deep understanding
+of the logic gates and how they interact with each other. The development of the modules was a process that required a lot of trial and error to get the correct
+output. The challenges faced during the development of the arithmetic operations were overcome through a combination of research, trial and error, and collaboration.
+The solutions to the challenges provided valuable insights into how the modules were designed and how they interacted with each other.
+
+Overall, implementing the actual hardware configurations of the arithmetic operations was rewarding and gave a deeper insight to how computers perform arithmetic
+when using symbols such as \textbf{+}, \textbf{-}, \textbf{*}, and \textbf{/}. In future, further enhancements to the readability and efficiency of the modules
+developed can be made to improve the overall performance of the arithmetic operations to provide a smoother and more efficient experience.
+
+\end{document}
+

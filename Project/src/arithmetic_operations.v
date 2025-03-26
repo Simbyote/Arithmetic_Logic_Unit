@@ -3,12 +3,28 @@
  * Contains modules for performing arithmetic operations on n-bit inputs
  *
  * Purpose:
- * - These modules perform arithmetic operations on mXn-bit inputs or n-bit inputs
+ * - These modules perform arithmetic operations on n-bit inputs
  *
  * Modules Included:
  * - UnpackPack_Shift: Unpacks a packed input, applies a shift operation, and packs the shifted outputs
- * - nBit_Shift: Performs an arithmetic shift (left or right) on an n-bit input
  * - mXnBits_Shift: Performs a shift operation on a packed input of mxn bits
+ * - nBit_Shift: Performs an arithmetic shift (left or right) on an n-bit input
+ *
+ * - Half_Adder: Performs addition on two 1-bit inputs and provides their sum and carry
+ * - Addition_Core: Performs addition on two 1-bit inputs and the carry bits
+ *
+ * - Half_Subtractor: Performs subtraction on two 1-bit inputs and provides their difference and borrow
+ * - Subtraction_Core: Performs subtraction on two 1-bit inputs and the borrow bits
+ *
+ * - Less_Than: Determines if the first n-bit input is less than the second n-bit input
+ * - Greater_Than: Determines if the first n-bit input is greater than the second n-bit input
+ * - Equal_To: Determines if the first n-bit input is equal to the second n-bit input
+ *
+ * - Multiplier_Core: Performs the multiplication operation on two n-bit inputs
+ *
+ * - Signal_Decomposition: Deconstructs the input signal into its leading bits and their positions
+ * - Signal_Alignment: Aligns two signals based on their leading ones
+ * - Divider_Core: Divides two n-bit inputs and provides the quotient, remainder, and flags
  *
  * Parameters:
  * - WIDTH: The bit width of the input-output
@@ -18,8 +34,28 @@
  * Implementation:
  * - The `UnpackPack_Shift` module provides a generalized framework to unpack
  *   packed inputs, perform the desired shift operation, and repack the outputs
- * - The `nBit_Shift` module performs an arithmetic shift operation on an n-bit input
  * - The `mXnBits_Shift` module performs a shift operation on a packed input of mxn bits
+ * - The `nBit_Shift` module performs an arithmetic shift operation on an n-bit input
+
+ * - The `Half_Adder` module performs addition on two 1-bit inputs and provides their sum and carry
+ * - The `Addition_Core` module performs addition on two 1-bit inputs and the carry bits
+ * - The `Full_Adder` module controls the flow of the addition operation using combinational logic
+
+ * - The `Half_Subtractor` module performs subtraction on two 1-bit inputs and provides their difference and borrow
+ * - The `Subtraction_Core` module performs subtraction on two 1-bit inputs and the borrow bits
+ * - The `Full_Subtractor` module controls the flow of the subtraction operation using combinational logic
+
+ * - The `Less_Than` module determines if the first n-bit input is less than the second n-bit input
+ * - The `Greater_Than` module determines if the first n-bit input is greater than the second n-bit input
+ * - The `Equal_To` module determines if the first n-bit input is equal to the second n-bit input
+
+ * - The `Multiplier_Core` module performs the multiplication operation on two n-bit inputs
+ * - The `Multiplier` module controls the flow of the multiplication operation using combinational logic
+
+ * - The `Signal_Decomposition` module deconstructs the input signal into its leading bits and their positions
+ * - The `Signal_Alignment` module aligns two signals based on their leading ones
+ * - The `Divider_Core` module divides two n-bit inputs and provides the quotient, remainder, and flags
+ * - The `Divider` module controls the flow of the division operation using combinational logic
  */
 
 /*
@@ -72,25 +108,56 @@ input wire [ SETS*WIDTH-1:0 ] in_packed,
 endmodule
 
 /*
+ * mXnBits_Shift
+ *
+ * Purpose:
+ * - Performs a shift operation on a packed input of mxn bits
+ *   based on a specified shift direction and amount
+ */
+module mXnBits_Shift #( parameter WIDTH = 4, parameter SETS = 2, parameter OP = 0) (
+    input wire [ SETS*WIDTH-1:0 ] in_packed,
+    input wire [ SETS*WIDTH-1:0 ] shift_packed,
+    output wire [ SETS*WIDTH-1:0 ] out_packed,
+    output wire [ SETS*WIDTH-1:0 ] overflow_packed
+);
+    // Check for invalid SETS
+    Set_Check #( .SETS( SETS ) ) set_check( );
+
+    // Generate the shift operation based on the specified OP
+    generate
+        if( OP == 0 ) begin
+            // Unpack, shift logically, and pack the inputs and outputs
+            UnpackPack_Shift #( .WIDTH( WIDTH ), .SETS( SETS ), .OP( 0 ) ) shift_logical(
+                .in_packed( in_packed ),
+                .shift_packed( shift_packed ),
+                .out_packed( out_packed ),
+                .overflow_packed( overflow_packed )
+            ); 
+        end
+        else if( OP == 1 ) begin
+            // Unpack, shift arithmetically, and pack the inputs and outputs
+            UnpackPack_Shift #( .WIDTH( WIDTH ), .SETS( SETS ), .OP( 1 ) ) shift_arithmetic(
+                .in_packed( in_packed ),
+                .shift_packed( shift_packed ),
+                .out_packed( out_packed ),
+                .overflow_packed( overflow_packed )
+            );
+        end
+    endgenerate
+endmodule
+
+/*
  * nBit_Shift
  *
  * Purpose:
  * - Performs an arithmetic shift (left or right) on an n-bit input
  *   based on a specified shift direction and amount
- *
- * Logical Shift ----
- * - Left shift: 0 = 0001 << 1 = 0010
- * - Right shift: 0 = 0001 >> 1 = 0000
- *
- * Arithmetic Shift ---- 
- * - Left shift: 0 = 0001 << 1 = 0010
- * - Right shift: 0 = 0001 >>> 1 = 0000 (or)
- * - Right shift: 1 = 1000 >>> 1 = 1100
+ * - Supports logical and arithmetic shift operations
  *
  * Note:
- * - Logical shift fills the shifted-in bits with 0
- * - Arithmetic shift fills the shifted-in bits with the sign bit (MSB)
- * - Shifts bits in binary numbers either left or right
+ * - OP value of 0 commences a logical shift; it fills the shifted-in bits with 0
+ * - OP value of 1 commences an arithmetic shift; it fills the shifted-in bits with the sign bit (MSB)
+ * - The shift can be decomposed into parts as direction, amount, and fill value
  */
 module nBit_Shift #( parameter WIDTH = 4, parameter OP = 0 ) (
     input wire [ WIDTH-1:0 ] in,
@@ -150,44 +217,175 @@ module nBit_Shift #( parameter WIDTH = 4, parameter OP = 0 ) (
 endmodule
 
 /*
- * mXnBits_Shift
+ * Half_Adder
  *
  * Purpose:
- * - Performs a shift operation on a packed input of mxn bits
- *   based on a specified shift direction and amount
+ * - Performs addition on two 1-bit inputs and provides their sum and carry
+ *
+ * Note:
+ * - The sum is the XOR of the inputs
+ * - The carry is the AND of the inputs
  */
-module mXnBits_Shift #( parameter WIDTH = 4, parameter SETS = 2, parameter OP = 0) (
-    input wire [ SETS*WIDTH-1:0 ] in_packed,
-    input wire [ SETS*WIDTH-1:0 ] shift_packed,
-    output wire [ SETS*WIDTH-1:0 ] out_packed,
-    output wire [ SETS*WIDTH-1:0 ] overflow_packed
+module Half_Adder (
+    input wire in1,
+    input wire in2,
+    output wire out,
+    output wire carry_out
 );
-    // Check for invalid SETS
-    Set_Check #( .SETS( SETS ) ) set_check( );
+    // Determines the sum
+    XOR xor_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( out )
+    );
 
-    // Generate the shift operation based on the specified OP
-    generate
-        if( OP == 0 ) begin
-            // Unpack, shift logically, and pack the inputs and outputs
-            UnpackPack_Shift #( .WIDTH( WIDTH ), .SETS( SETS ), .OP( 0 ) ) shift_logical(
-                .in_packed( in_packed ),
-                .shift_packed( shift_packed ),
-                .out_packed( out_packed ),
-                .overflow_packed( overflow_packed )
-            ); 
-        end
-        else if( OP == 1 ) begin
-            // Unpack, shift arithmetically, and pack the inputs and outputs
-            UnpackPack_Shift #( .WIDTH( WIDTH ), .SETS( SETS ), .OP( 1 ) ) shift_arithmetic(
-                .in_packed( in_packed ),
-                .shift_packed( shift_packed ),
-                .out_packed( out_packed ),
-                .overflow_packed( overflow_packed )
-            );
-        end
-    endgenerate
+    // Determines the carry
+    AND and_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( carry_out )
+    );
 endmodule
 
+/*
+ * Addition_Core
+ *
+ * Purpose:
+ * - Performs addition on two 1-bit inputs and the carry bits
+ *
+ * Note:
+ * - Is an expansion on the half adder where it includes the arithmetic for carry-over bits
+ * - Meant to be used in a loop for n-bit addition
+ * - Typically, this module would start with a carry-in bit of 0 for the first bit
+ *   and would be updated over the course of the addition operation until a final carry-out
+ *   bit is determined
+ */
+module Addition_Core #( parameter WIDTH = 4 ) (
+    input wire in1,
+    input wire in2,
+    input wire carry_in,
+    output wire out,
+    output wire carry_out
+);
+    // Internal wires
+    wire temp_out, temp_carry_out, carry_overflow;
+
+    // Add the inputs and store the output
+    Half_Adder input_adder_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( temp_out ),
+        .carry_out( temp_carry_out )
+    );
+
+    // Add the carry
+    Half_Adder carry_adder_instance (
+        .in1( temp_out ),
+        .in2( carry_in ),
+        .out( out ),
+        .carry_out( carry_overflow )
+    );
+
+    // Determine the final carry
+    OR or_instance (
+        .in1( temp_carry_out ),
+        .in2( carry_overflow ),
+        .out( carry_out )
+    );
+endmodule
+
+/*
+ * Half_Subtractor
+ * Purpose:
+ * - Performs subtraction on two 1-bit inputs and provides their difference and borrow
+ *
+ * Note:
+ * - The difference is the XOR of the inputs
+ * - The borrow is the AND of the inverted minuend and the subtrahend
+ */
+module Half_Subtractor (
+    input wire in1,
+    input wire in2,
+    output wire out,
+    output wire borrow_out
+);
+    // Determines the difference
+    XOR xor_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( out )
+    );
+
+    // Inverts the subtractor input
+    NOT not_instance (
+        .in( in1 ),
+        .out( in1_not )
+    );
+
+    // Determines the borrow
+    AND and_instance (
+        .in1( in1_not ),
+        .in2( in2 ),
+        .out( borrow_out )
+    );
+endmodule
+
+/*
+ * Subtraction_Core
+ * Purpose:
+ * - Performs subtraction on two 1-bit inputs and the borrow bits
+ *
+ * Note:
+ * - Is an expansion on the half subtractor where it includes the arithmetic for borrow-over bits
+ * - Meant to be used in a loop for n-bit subtraction
+ * - Typically, this module would start with a borrow-in bit of 0 for the first bit
+ *   and would be updated over the course of the subtraction operation until a final borrow-out
+ *   bit is determined
+ */
+module Subtraction_Core #( parameter WIDTH = 4 ) (
+    input wire in1,
+    input wire in2,
+    input wire borrow_in,
+    output wire out,
+    output wire borrow_out
+);
+    // Internal wires
+    wire temp_out, temp_borrow_out, borrow_overflow;
+
+    // Subtract the inputs and store the output
+    Half_Subtractor input_subtractor_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( temp_out ),
+        .borrow_out( temp_borrow_out )
+    );
+
+    // Subtract the borrow
+    Half_Subtractor borrow_subtractor_instance (
+        .in1( temp_out ),
+        .in2( borrow_in ),
+        .out( out ),
+        .borrow_out( borrow_overflow )
+    );
+
+    // Determine the final borrow
+    OR or_instance (
+        .in1( temp_borrow_out ),
+        .in2( borrow_overflow ),
+        .out( borrow_out )
+    );
+endmodule
+
+/*
+ * Less_Than
+ *
+ * Purpose:
+ * - Determines if the first n-bit input is less than the second n-bit input
+ *
+ * Note:
+ * - The module uses the Full_Subtractor module to perform the comparison
+ * - The final borrow bit is assigned as the output
+ */
 module Less_Than #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
@@ -206,6 +404,16 @@ module Less_Than #( parameter WIDTH = 4 ) (
     );
 endmodule
 
+/*
+ * Greater_Than
+ *
+ * Purpose:
+ * - Determines if the first n-bit input is greater than the second n-bit input
+ *
+ * Note:
+ * - The module uses the Less_Than module to perform the comparison
+ * - The output is the inverse of the Less_Than output
+ */
 module Greater_Than #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
@@ -222,6 +430,16 @@ module Greater_Than #( parameter WIDTH = 4 ) (
     );
 endmodule
 
+/*
+ * Equal_To
+ *
+ * Purpose:
+ * - Determines if the first n-bit input is equal to the second n-bit input
+ *
+ * Note:
+ * - The module uses the Less_Than and Greater_Than modules to perform the comparison
+ * - The output is the NOR of the Less_Than and Greater_Than results
+ */
 module Equal_To #( parameter WIDTH = 4) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
@@ -253,235 +471,89 @@ module Equal_To #( parameter WIDTH = 4) (
     );    
 endmodule
 
-// 1-bit Half Adder
-module Half_Adder (
-    input wire in1,
-    input wire in2,
-    output wire out,
-    output wire carry_out
-);
-    // Determines the sum
-    XOR xor_instance (
-        .in1( in1 ),
-        .in2( in2 ),
-        .out( out )
-    );
-
-    // Determines the carry
-    AND and_instance (
-        .in1( in1 ),
-        .in2( in2 ),
-        .out( carry_out )
-    );
-endmodule
-
-// nBit Full Adder ( in1 + in2 )
-module Full_Adder #( parameter WIDTH = 4 ) (
+/*
+ * Multiplier_Core
+ *
+ * Purpose:
+ * - Performs the multiplication operation on two n-bit inputs
+ *
+ * Note:
+ * - The module uses two output types: the outputs and a flag
+ * - The Full_Adder modules calculate the sum while the Equal_To module determines the flag
+ * - Meant to be used in a loop for n-bit multiplication
+ * - Typically, this module would start with a partial sum of 0 and have its step_counter set 
+ *   to 0 for the first bit and would be updated over the course of the multiplication operation 
+ *   until a final sum is determined
+ */
+module Multiplier_Core #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
-    output wire [ WIDTH-1:0 ] out,
-    output wire final_carry
-);
-    // Internal carry wires
-    wire [ WIDTH-1:0 ] carry_in, carry_out;
-    assign carry_in[ 0 ] = 1'b0;
-
-    genvar i;
-    generate
-        for( i = 0; i < WIDTH; i = i + 1 ) begin : addition_loop
-            // Internal output wires
-            wire temp_carry_out, temp_out;
-
-            // Add the inputs and store the output
-            Half_Adder half_adder_instance1 (
-                .in1( in1[ i ] ),
-                .in2( in2[ i ] ),
-                .out( temp_out ),
-                .carry_out( temp_carry_out )
-            );
-
-            // Add the carry
-            Half_Adder half_adder_instance2 (
-                .in1( temp_out ),
-                .in2( carry_in[ i ] ),
-                .out( out[ i ] ),
-                .carry_out( carry_out[ i ] )
-            );
-
-            // Assign the carry to the next bit
-            if( i < WIDTH - 1 ) begin
-                OR or_instance (
-                    .in1( carry_out[ i ] ),
-                    .in2( temp_carry_out ),
-                    .out( carry_in[ i + 1 ] )
-                );
-            end
-            else begin
-                OR or_instance (
-                    .in1( carry_out[ i ] ),
-                    .in2( temp_carry_out ),
-                    .out( final_carry )
-                );
-            end
-        end
-    endgenerate
-endmodule
-
-// 1-bit half subtractor
-module Half_Subtractor (
-    input wire in1,
-    input wire in2,
-    output wire out,
-    output wire borrow_out
-);
-    // Determines the difference
-    XOR xor_instance (
-        .in1( in1 ),
-        .in2( in2 ),
-        .out( out )
-    );
-
-    // Inverts the subtractor input
-    NOT not_instance (
-        .in( in1 ),
-        .out( in1_not )
-    );
-
-    // Determines the borrow
-    AND and_instance (
-        .in1( in1_not ),
-        .in2( in2 ),
-        .out( borrow_out )
-    );
-endmodule
-
-// nBit Subtractor ( in1 - in2 )
-module Full_Subtractor #( parameter WIDTH = 4 ) (
-    input wire [ WIDTH-1:0 ] in1,
-    input wire [ WIDTH-1:0 ] in2,
-    output wire [ WIDTH-1:0 ] out,
-    output wire final_borrow
-);
-    // Internal borrow wires
-    wire [ WIDTH-1:0 ] borrow_in, borrow_out, out_assign;
-    assign borrow_in[ 0 ] = 1'b0;
-
-    genvar i;
-    generate
-        for( i = 0; i < WIDTH; i = i + 1 ) begin : subtraction_loop
-            // Internal output wires
-            wire temp_carry_out, temp_out;
-
-            // Subtract the inputs and store the output
-            Half_Subtractor half_subtractor_instance1 (
-                .in1( in1[ i ] ),
-                .in2( in2[ i ] ),
-                .out( temp_out ),
-                .borrow_out( temp_carry_out )
-            );
-
-            // Subtract the borrow
-            Half_Subtractor half_subtractor_instance2 (
-                .in1( temp_out ),
-                .in2( borrow_in[ i ] ),
-                .out( out_assign[ i ] ),
-                .borrow_out( borrow_out[ i ] )
-            );
-
-            // Assign the borrow to the next bit
-            if( i < WIDTH - 1 ) begin
-                OR or_instance (
-                    .in1( borrow_out[ i ] ),
-                    .in2( temp_carry_out ),
-                    .out( borrow_in[ i + 1 ] )
-                );
-            end
-            else begin
-                OR or_instance (
-                    .in1( borrow_out[ i ] ),
-                    .in2( temp_carry_out ),
-                    .out( final_borrow )
-                );
-            end
-
-            assign out[ i ] = final_borrow ? 1'b0 : out_assign[ i ];
-        end
-    endgenerate
-endmodule
-
-module Multiplier #( parameter WIDTH = 4 ) (
-    input wire [ WIDTH-1:0 ] in1,
-    input wire [ WIDTH-1:0 ] in2,
+    input wire [ WIDTH-1:0 ] partial_high,
+    input wire [ WIDTH-1:0 ] partial_low,
+    input wire [ WIDTH-2:0 ] step_counter,
+    output wire [ WIDTH-1:0 ] out_high,
     output wire [ WIDTH-1:0 ] out_low,
-    output wire [ WIDTH-1:0 ] out_high
+    output wire is_equal
 );
     // Internal wires
-    wire [ WIDTH-1:0 ] partial_low[ WIDTH-1:0 ];
-    wire [ WIDTH-1:0 ] partial_high[ WIDTH-1:0 ];
+    wire [ WIDTH-1:0 ] shift, shift_result, shift_overflow, combined_overflow;
+    wire final_carry;
+    assign shift = { step_counter, 1'b0 };  // Contruct the shift signal
 
-    // Assign the initial values for the high and low sums
-    assign partial_low[ 0 ] = in2[ 0 ] ? in1 : { WIDTH{ 1'b0 } };
-    assign partial_high[ 0 ] = { WIDTH{ 1'b0 } };
+    // Shift the multiplicand according to the step
+    nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) shift_instance (
+        .in( in1 ),
+        .shift( shift ),
+        .out( shift_result ),
+        .overflow( shift_overflow )
+    );
 
-    genvar i;
-    generate
-        for( i = 1; i < WIDTH; i = i + 1 ) begin : multiplication_loop
-            // Internal wires
-            wire [ WIDTH-1:0 ] temp_low, temp_high_overflow, temp_high_carry, temp_overflow;
-            wire [ WIDTH-1:0 ] shift, shift_result;
-            wire [ WIDTH-2:0 ] shift_amt;
-            wire final_carry;
+    // Add the shifted multiplicand to the low side of the partial sum
+    Full_Adder #( .WIDTH( WIDTH ) ) adder_low_instance (
+        .in1( partial_low ),
+        .in2( shift_result ),
+        .out( out_low ),
+        .final_carry( final_carry )
+    );
 
-            assign shift_amt = $unsigned(i) << 1;
-            assign shift = { shift_amt, 1'b0 };
+    // Add the overflow from the shift to the high side of the partial sum
+    Full_Adder #( .WIDTH( WIDTH ) ) adder_overflow_instance (
+        .in1( partial_high ),
+        .in2( shift_overflow ),
+        .out( combined_overflow ),
+        .final_carry(  )
+    );
 
-            // Shift the multiplicand by the current loop index
-            nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) shift_instance (
-                .in( in1 ),
-                .shift( shift ),
-                .out( shift_result ),
-                .overflow( temp_overflow )
-            );
+    // Add the overflow from the two addition operations to the high side of the partial sum
+    Full_Adder #( .WIDTH( WIDTH ) ) adder_final_instance (
+        .in1( combined_overflow ),
+        .in2( { { ( WIDTH-1 ){ 1'b0 } }, final_carry } ),
+        .out( out_high ),
+        .final_carry(  )    // Final carry is not used
+    );
 
-            // Add the low output to the shifted multiplicand
-            Full_Adder #( .WIDTH( WIDTH ) ) adder_low_instance (
-                .in1( partial_low[ i - 1 ] ),
-                .in2( shift_result ),
-                .out( temp_low ),
-                .final_carry( final_carry )
-            );
-
-            // Add the high output to the overflow
-            Full_Adder #( .WIDTH( WIDTH ) ) adder_overflow_instance (
-                .in1( partial_high[ i - 1 ] ),
-                .in2( temp_overflow ),
-                .out( temp_high_overflow ),
-                .final_carry(  )
-            );
-
-            // Add the carry from the low output to the high output
-            Full_Adder #( .WIDTH( WIDTH ) ) adder_final_instance (
-                .in1( temp_high_overflow ),
-                .in2( { { ( WIDTH-1 ){ 1'b0 } }, final_carry } ),
-                .out( temp_high_carry ),
-                .final_carry(  )
-            );
-
-            // Assign the respective outputs to the partial sums
-            assign partial_low[ i ] = in2[ i ] ? temp_low : partial_low[ i - 1 ];
-            assign partial_high[ i ] = in2[ i ] ? temp_high_carry : partial_high[ i - 1 ];
-        end
-
-        assign out_low = partial_low[ WIDTH - 1 ];
-        assign out_high = partial_high[ WIDTH - 1 ];
-    endgenerate
+    // Determine if the current bit being calculated is is equal to 1
+    Equal_To #( .WIDTH( 1'b1 ) ) equal_instance (
+        .in1( in2[ step_counter ] ),
+        .in2( 1'b1 ),
+        .out( is_equal )
+    );
 endmodule
 
-module Division_Decomposition #( parameter WIDTH = 4 ) (
+/*
+ * Signal_Decomposition
+ * Purpose: 
+ * - Deconstructs the input signal into its leading bits and their positions
+ *
+ * Note:
+ * - Determines the leading bit by comparing with a sample signal that is gradually shifted
+ */ 
+module Signal_Decomposition #( parameter WIDTH = 4 ) (
     input  wire [ WIDTH-1:0 ] in,
     output wire [ WIDTH-1:0 ] out_lead,
     output wire [ WIDTH-2:0 ] out_pos
 );
+    // Internal wires
     wire [ WIDTH-1:0 ] greatest_bit[ WIDTH-1:0 ];
     wire [ WIDTH-2:0 ] bit_pos[ WIDTH-1:0 ];
     assign greatest_bit[ 0 ] = in[ 0 ] ? 1'b1 : 1'b0;
@@ -490,10 +562,15 @@ module Division_Decomposition #( parameter WIDTH = 4 ) (
     genvar i;
     generate
         for( i = 1; i < WIDTH; i = i + 1 ) begin : leading_loop
+            // Internal wires
             wire [ WIDTH-2:1 ] shift_amt;
             wire [ WIDTH-1:0 ] shift, shift_result;
+
+            // Build the shift signal
             assign shift_amt = i;
             assign shift = { 1'b0, shift_amt, 1'b0 };
+
+            // Shift a sample signal to compare with the input
             nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) shift_instance (
                 .in( { { ( WIDTH-1 ){ 1'b0 } }, 1'b1 } ),
                 .shift( shift ),
@@ -501,8 +578,9 @@ module Division_Decomposition #( parameter WIDTH = 4 ) (
                 .overflow(  )
             );
 
-           assign greatest_bit[ i ] = in[ i ] ? shift_result : greatest_bit[ i - 1 ];
-           assign bit_pos[ i ] = in[ i ] ? i : bit_pos[ i - 1 ];
+            // Assign the greatest bit and mark its position if it is the leading bit
+            assign greatest_bit[ i ] = in[ i ] ? shift_result : greatest_bit[ i - 1 ];
+            assign bit_pos[ i ] = in[ i ] ? i : bit_pos[ i - 1 ];
         end
 
         assign out_lead = greatest_bit[ WIDTH - 1 ];
@@ -510,32 +588,35 @@ module Division_Decomposition #( parameter WIDTH = 4 ) (
     endgenerate
 endmodule
 
-module Division_Alignment #( parameter WIDTH = 4 ) (
+/*
+ * Signal_Alignment
+ * Purpose: 
+ * - Aligns two signals based on their leading ones
+ * 
+ * Note:
+ * - Aligns the divisor with the dividend by shifting the divisor by the difference in positions
+ * - Overshoot detection is performed to correct the alignment if the shift is greater than the dividend
+ */
+module Signal_Alignment #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out,
     output wire [ WIDTH-2:0 ] out_pos
 );
     // Internal wires
-    wire [ WIDTH-1:0 ] in1_lead, in2_lead;
-    wire [ WIDTH-2:0 ] in1_pos, in2_pos;
-
-    wire [ WIDTH-2:0 ] temp_pos;
-
-    wire [ WIDTH-1:0 ] subtractor_result;
+    wire [ WIDTH-1:0 ] in1_lead, in2_lead, subtractor_result, in2_aligned;
+    wire [ WIDTH-2:0 ] in1_pos, in2_pos, temp_pos;
     wire final_borrow;
 
-    wire [ WIDTH-1:0 ] aligned_in2;
-
     // Determine the position of the dividend's leading one
-    Division_Decomposition #( .WIDTH( WIDTH ) ) lead1 (
+    Signal_Decomposition #( .WIDTH( WIDTH ) ) lead1 (
         .in( in1 ),
         .out_lead( in1_lead ),
         .out_pos( in1_pos )
     );
 
     // Determine the position of the divisor's leading one
-    Division_Decomposition #( .WIDTH( WIDTH ) ) lead2 (
+    Signal_Decomposition #( .WIDTH( WIDTH ) ) lead2 (
         .in( in2 ),
         .out_lead( in2_lead ),
         .out_pos( in2_pos )
@@ -553,152 +634,107 @@ module Division_Alignment #( parameter WIDTH = 4 ) (
     nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) shift_instance (
         .in( in2 ),
         .shift( { temp_pos, 1'b0 } ),
-        .out( aligned_in2 ),
+        .out( in2_aligned ),
         .overflow(  )
     );
 
-    wire overshoot = ( aligned_in2 > in1 );
+    // Overshoot detection wires
+    wire overshoot;
+    Greater_Than #( .WIDTH( WIDTH ) ) greater_than_instance (
+        .in1( in2_aligned ),
+        .in2( in1 ),
+        .out( overshoot )
+    );
 
-    wire [ WIDTH-2:0 ] correct_shift_amt = temp_pos - 1;
-    wire [ WIDTH-1:0 ] correct_shift = { 1'b0, correct_shift_amt, 1'b0 };
-    wire [ WIDTH-1:0 ] correct_aligned_in2;
+    // Corrected alignment wires
+    wire [ WIDTH-2:0 ] correct_shift_amt;
+    wire [ WIDTH-1:0 ] correct_shift, correct_in2;
 
+    // Assign the corrections
+    assign correct_shift_amt = temp_pos - 1;
+    assign correct_shift = { 1'b0, correct_shift_amt, 1'b0 };
+
+    // Perform the correction
     nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) correct_shift_instance (
         .in( in2 ),
         .shift( correct_shift ),
-        .out( correct_aligned_in2 ),
+        .out( correct_in2 ),
         .overflow(  )
     );
 
-    assign out = overshoot ? correct_aligned_in2 : aligned_in2;
+    // Correct the alignment if there is an overshoot, otherwise assign to the aligned divisor
+    assign out = overshoot ? correct_in2 : in2_aligned;
     assign out_pos = overshoot ? correct_shift_amt : temp_pos;
 endmodule
 
-module Divider #( parameter WIDTH = 4 ) (
+/*
+ * Divider_Core
+ * Purpose: 
+ * - Divides two n-bit inputs and provides the quotient, remainder, and flags
+ * 
+ * Note:
+ * - The module works in steps to produce its results, starting with the alignment of the dividend and divisor
+ *   and then performing the subtraction operation to determine the quotient and remainder
+ * - The quotient is assigned based on the how many bits are shifted from the alignment process
+ * - The module also checks for special cases such as division by zero, a dividend less than the divisor, and
+ *   if there is a final borrow present
+ */
+module Divider_Core #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out,
-    output wire [ WIDTH-1:0 ] remainder
+    output wire [ WIDTH-1:0 ] remainder,
+    output wire is_zero,
+    output wire is_less,
+    output wire has_borrow
 );
-    wire [ WIDTH-1:0 ] expected_quotient;
-    assign expected_quotient = in2 != 0 ? in1 / in2 : { WIDTH{ 1'b0 } };
-
-    wire [ WIDTH-1:0 ] partial_quotient[ WIDTH-1:0 ];
-    wire [ WIDTH-1:0 ] partial_remainder[ WIDTH-1:0 ];
-
-    wire [ WIDTH-1:0 ] in2_aligned;
+    // Internal wires
+    wire [ WIDTH-1:0 ] alignment_result;
     wire [ WIDTH-2:0 ] pos;
-
-    // This subtractor uses the shift result to subtract from 'in1'
-    wire [ WIDTH-1:0 ] subtractor_result;
     wire final_borrow;
 
-    // High is yes, low is no
-    wire perform_subtraction; 
-
-    // Sets the quotient
-    wire [ WIDTH-1:0 ] set_quotient;
-
-    // Align 'in2' with 'in1' based on leading bits
-    Division_Alignment #( .WIDTH( WIDTH ) ) alignment_instance (
+    // Align the dividend and divisor
+    Signal_Alignment #( .WIDTH( WIDTH ) ) alignment_instance (
         .in1( in1 ),
         .in2( in2 ),
-        .out( in2_aligned ),
+        .out( alignment_result ),
         .out_pos( pos )
     );
 
-    // Subtract the aligned 'in2' from 'in1' to get the initial remainder
+    // Subtract the aligned divisor from the dividend
     Full_Subtractor #( .WIDTH( WIDTH ) ) initial_subtractor_instance (
         .in1( in1 ),
-        .in2( in2_aligned ),
-        .out( subtractor_result ),
+        .in2( alignment_result ),
+        .out( remainder ),
         .final_borrow( final_borrow )
     );
 
-
-    assign perform_subtraction = final_borrow ? 1'b0 : 1'b1;
-
-    // For the quotient, align the first bit based on what the shift amount was and place it there in the quotient
+    // Assign the quotient based on the current position being worked on
     nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) shift_quotient_instance (
         .in( { {(WIDTH-1){1'b0}}, 1'b1 } ),
         .shift( { pos, 1'b0 } ),
-        .out( set_quotient ),
-        .overflow(  )
+        .out( out ),
+        .overflow(  )   // Overflow is not used
     );
 
-    wire zero = ( in2 == 0 );
-    wire less_than = ( in1 < in2 );
+    // Check if the divisor is zero
+    Equal_To #( .WIDTH( WIDTH ) ) equal_instance (
+        .in1( in2 ),
+        .in2( { WIDTH{ 1'b0 } } ),
+        .out( is_zero )
+    );
 
-    
-    // Assign the quotient to the shifted position if subtraction is valid
-    assign partial_quotient[ 0 ] = perform_subtraction
-                                && !zero
-                                && !less_than
-                                ? set_quotient 
-                                : { WIDTH{ 1'b0 } };
-    // Set the shift result as the initial remainder if subtraction is valid
-    assign partial_remainder[0] = zero
-                              ? { WIDTH{ 1'b0 } } 
-                              : ( perform_subtraction && !less_than 
-                                 ? subtractor_result 
-                                 : in1 );
+    // Check if in1 < in2
+    Less_Than #( .WIDTH( WIDTH ) ) less_than_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( is_less )
+    );
 
-
-    genvar i;
-    generate
-        for( i = 1; i < WIDTH; i = i + 1 ) begin : division_loop
-
-            wire [ WIDTH-1:0 ] new_quotion_check, new_remainder_check;
-
-            wire [ WIDTH-1:0 ] new_aligned_in1;
-            wire [ WIDTH-2:0 ] new_pos;
-
-            wire [ WIDTH-1:0 ] new_subtractor_result;
-            wire new_final_borrow;
-
-            wire new_performance_subtraction;
-
-            wire [ WIDTH-1:0 ] new_set_quotient;
-
-            Division_Alignment #( .WIDTH( WIDTH ) ) new_alignment_instance (
-                .in1( partial_remainder[ i - 1 ] ),
-                .in2( in2 ),
-                .out( new_aligned_in1 ),
-                .out_pos( new_pos )
-            );
-
-            Full_Subtractor #( .WIDTH( WIDTH ) ) new_subtractor_instance (
-                .in1( partial_remainder[ i - 1 ] ),
-                .in2( new_aligned_in1 ),
-                .out( new_subtractor_result ),
-                .final_borrow( new_final_borrow )
-            );
-
-            assign new_performance_subtraction = new_final_borrow ? 1'b0 : 1'b1;
-
-            nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) new_shift_quotient_instance (
-                .in( { {(WIDTH-1){1'b0}}, 1'b1 } ),
-                .shift( { new_pos, 1'b0 } ),
-                .out( new_set_quotient ),
-                .overflow(  )
-            );
-
-            wire divisor_check = ( partial_remainder[ i - 1 ] < in2 );
-
-            assign partial_quotient[ i ] = new_performance_subtraction 
-                                        && !zero 
-                                        && !divisor_check 
-                                        ? partial_quotient[ i - 1 ] + new_set_quotient 
-                                        : partial_quotient[ i - 1 ];
-
-            assign partial_remainder[ i ] = new_performance_subtraction 
-                                        && !zero 
-                                        && !divisor_check 
-                                        ? new_subtractor_result 
-                                        : partial_remainder[ i - 1 ];
-        end
-
-        assign out = partial_quotient[ WIDTH - 1 ];
-        assign remainder = partial_remainder[ WIDTH - 1 ];
-    endgenerate
+    // Check if there is a final borrow
+    Equal_To #( .WIDTH( 1 ) ) final_borrow_instance (
+        .in1( final_borrow ),
+        .in2( 1'b0 ),
+        .out( has_borrow )
+    );
 endmodule

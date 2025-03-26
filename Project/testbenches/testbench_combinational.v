@@ -1,5 +1,5 @@
 `timescale 1ns/1ns
-module testbench_arithmeticOP;
+module testbench_combinational;
     parameter WIDTH = 4;    // The number of bits for the input-output
     parameter BIT_STATE = 2 ** WIDTH;   // The total possible states for the given bit WIDTH
 
@@ -37,7 +37,7 @@ module testbench_arithmeticOP;
     reg half_in1, half_in2;
     wire half_adder_out, half_adder_carry_out;
 
-    Half_Adder #( .WIDTH( WIDTH ) ) adder_instance (
+    Half_Adder adder_instance (
         .in1( half_in1 ),
         .in2( half_in2 ),
         .out( half_adder_out ),
@@ -47,7 +47,7 @@ module testbench_arithmeticOP;
     // Half Subtractor
     wire half_subtractor_out, half_subtractor_borrow_out;
 
-    Half_Subtractor #( .WIDTH( WIDTH ) ) subtractor_instance (
+    Half_Subtractor subtractor_instance (
         .in1( half_in1 ),
         .in2( half_in2 ),
         .out( half_subtractor_out ),
@@ -99,39 +99,42 @@ module testbench_arithmeticOP;
         .remainder( div_remainder )
     );
 
+
+    // Arithemtic Tests
     `define GENERIC_HALF( REG1, REG2 ) \
-        begin \
-            REG1 = { 1'b0 }; \
+    begin \
+        REG1 = { 1'b0 }; \
+        repeat( 2 ) begin \
+            REG2 = { 1'b0 }; \
             repeat( 2 ) begin \
-                REG2 = { 1'b0 }; \
-                repeat( 2 ) begin \
-                    #10; \
-                    REG2 = REG2 + 1; \
-                end \
-                REG1 = REG1 + 1; \
+                #10; \
+                REG2 = REG2 + 1; \
             end \
-        end
+            REG1 = REG1 + 1; \
+        end \
+    end
 
     `define GENERIC_FULL( REG1, REG2 ) \
-        begin \
-            REG1 = { WIDTH{ 1'b0 } }; \
-            repeat( BIT_STATE ) begin \
-                REG2 = { WIDTH{ 1'b0 } }; \
-                repeat( BIT_STATE ) begin \
-                    #10; \
-                    REG2 = REG2 + 1; \
-                end \
-                REG1 = REG1 + 1; \
-            end \
-            REG1 = { WIDTH{ 1'b0 } }; \
+    begin \
+        REG1 = { WIDTH{ 1'b0 } }; \
+        repeat( BIT_STATE ) begin \
             REG2 = { WIDTH{ 1'b0 } }; \
-        end
+            repeat( BIT_STATE ) begin \
+                #10; \
+                REG2 = REG2 + 1; \
+            end \
+            REG1 = REG1 + 1; \
+        end \
+        REG1 = { WIDTH{ 1'b0 } }; \
+        REG2 = { WIDTH{ 1'b0 } }; \
+    end
+
 
     initial begin
         $dumpfile( "waveform6.vcd" );
-        $dumpvars( 0, testbench_arithmeticOP );
+        $dumpvars( 0, testbench_combinational );
 
-        `GENERIC_FULL( div_in1, div_in2 );
+        `GENERIC_FULL( full_in1, full_in2 );
         
         #50 $finish;
     end
