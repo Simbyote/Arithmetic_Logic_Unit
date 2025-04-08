@@ -72,8 +72,8 @@
 
 \begin{document}
 \maketitle
-
 \newpage
+
 \tableofcontents
 \thispagestyle{empty}
 \pagestyle{fancy}
@@ -82,6 +82,8 @@
 \setcounter{page}{1}
 
 \section{Abstract}
+
+\section{Background}
 
 \section{Introduction}
 
@@ -134,14 +136,22 @@
         the final clock cycle would transition into the DONE state without properly updating the output registers for the final output. A resolution was developed
         that reshaped the logic in the \textit{STEP} and \textit{DONE} states, moving the final assignment out of DONE and into the STEP state while adding additional
         logic checks to ensure that the output registers were properly updated when they needed to be.
-    \item {Timing Mismatch in Addition}: Refactoring the Adder Module was similarly done as the Multiplier Module. However, a bug was encountered where the output
+    \item \textbf{Timing Mismatch in Addition}: Refactoring the Adder Module was similarly done as the Multiplier Module. However, a bug was encountered where the output
         of the adder was shifted up the output register. This was found to be due to the timing of the output register assignment, where the output register was
         being assigned the value of the output of the adder before the adder had finished its operation. To resolve this issue, we split the function into two 
         different clock cycles, one for the addition and one for the assignment of the output register. This allowed the adder to finish its operation before the
         output register was assigned the value of the output of the adder.
-    
-
+    \item \textbf{Developing the ALU Flow}: To properly select which ALU operation to perform, we needed to develop a control that would handle both the individual
+        operations and the the overall ALU operation over  period of time, since in reality, things take time to process. Two distictions are made between the 
+        controllers however: The ALU\_Controller is responsible for the overall flow of the ALU operations, selecting the proper ALU operation to compute based on an
+        opcode, and the Sub\_Controllers, whcih are responsible for the individual operations and are aptly named after the operation they are performing. THe main
+        difference between these is that the Sub\_Controllers run on posedges, while the ALU\_Controller runs without a posedge. The choice was to avoid any confusion
+        in the ALU\_Controller, since it is not a sequential operation.
 \end{itemize}
+
+Tip: Use $input{}$ for Modular Diagrams
+If your report grows, put each diagram in a .tex snippet file and $input{tikz/alu_diagram.tex}$ 
+into the main doc — keeps things clean and flexible.
 
 \end{document}
 

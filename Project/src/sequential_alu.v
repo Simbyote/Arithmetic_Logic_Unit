@@ -41,7 +41,7 @@ module Sequential_ALU #( parameter WIDTH = 4 ) (
     input wire clk,
     input wire reset,
     input wire start,
-    input wire [ WIDTH-1:0 ] opcode,
+    input wire [ 3:0 ] opcode,
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
     output reg [ WIDTH-1:0 ] out_high,   // Can represent the quotient, sum, difference, or shift result
@@ -49,16 +49,23 @@ module Sequential_ALU #( parameter WIDTH = 4 ) (
     output reg flag,    // Can represent the carry and borrow flags
     output reg done
 );
-    // FSM states
+    // ALU Operations
     localparam [ 3:0 ]  ADD = 4'b0000,
                     SUB = 4'b0001,
                     MUL = 4'b0010,
                     DIV = 4'b0011,
                     SHL = 4'b0100,
                     SHR = 4'b0101,
-                    IDLE = 4'b0111,
-                    DONE = 4'b1000;
+                    LT  = 4'b0110,
+                    GT  = 4'b0111,
+                    EQ  = 4'b1000,
+                    AND = 4'b1001,
+                    OR  = 4'b1010,
+                    XOR = 4'b1011,
+                    NOT = 4'b1100;
     reg [ 3:0 ] state;
+
+    // Internal wires
 
     // Addition Controller
     wire [ WIDTH-1:0 ] add_out;
@@ -140,9 +147,135 @@ module Sequential_ALU #( parameter WIDTH = 4 ) (
         .overflow( shr_overflow )
     );
 
+    // Less than Controller
+    wire lt_out;
+    
+    Less_Than #( .WIDTH( WIDTH ) ) lt_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( lt_out )
+    );
+
+    // Greater than Controller
+    wire gt_out;
+
+    Greater_Than #( .WIDTH( WIDTH ) ) gt_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( gt_out )
+    );
+
+    // Equal Controller
+    wire eq_out;
+
+    Equal_To #( .WIDTH( WIDTH ) ) eq_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( eq_out )
+    );
+
+    // AND Controller
+    wire [ WIDTH-1:0 ] and_out;
+    nBit_AND #( .WIDTH( WIDTH ) ) and_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( and_out )
+    );
+
+    // OR Controller
+    wire [ WIDTH-1:0 ] or_out;
+    nBit_OR #( .WIDTH( WIDTH ) ) or_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( or_out )
+    );
+
+    // XOR Controller
+    wire [ WIDTH-1:0 ] xor_out;
+    nBit_XOR #( .WIDTH( WIDTH ) ) xor_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( xor_out )
+    );
+
+    // NOT Controller
+    wire [ WIDTH-1:0 ] not_out;
+    nBit_NOT #( .WIDTH( WIDTH ) ) not_instance (
+        .in( in1 ),
+        .out( not_out )
+    );
+
     // FSM logic
-    always @( posedge clk or posedge reset ) begin
-        /* @TODO: Implement the logic for arithmetic flow */
+    always @(*) begin
+        // Initialize the output signals
+        out_high = { WIDTH{ 1'b0 } };
+        out_low = { WIDTH{ 1'b0 } };
+        flag = 1'b0;
+        done = 1'b0;
+
+        case( opcode )
+            ADD: begin
+                out_low = add_out;
+                flag = final_carry;
+                done = add_done;
+            end
+            SUB: begin
+                out_low = sub_out;
+                flag = final_borrow;
+                done = sub_done;
+            end
+            MUL: begin
+                out_high = mul_high;
+                out_low = mul_low;
+                done = mult_done;
+            end
+            DIV: begin
+                out_high = div_quotient;
+                out_low = div_remainder;
+                done = div_done;
+            end
+            SHL: begin
+                out_high = shl_out;
+                out_low = shl_overflow;
+                done = 1'b1;
+            end
+            SHR: begin
+                out_high = shr_out;
+                out_low = shr_overflow;
+                done = 1'b1;
+            end
+            LT: begin
+                flag = lt_out;
+                done = 1'b1;
+            end
+            GT: begin
+                flag = gt_out;
+                done = 1'b1;
+            end
+            EQ: begin
+                flag = eq_out;
+                done = 1'b1;
+            end
+            AND: begin
+                out_low = and_out;
+                done = 1'b1;
+            end
+            OR: begin
+                out_low = or_out;
+                done = 1'b1;
+            end
+            XOR: begin
+                out_low = xor_out;
+                done = 1'b1;
+            end
+            NOT: begin
+                out_low = not_out;
+                done = 1'b1;
+            end
+            default: begin
+                done = 1'b1;
+            end
+        endcase
     end
 endmodule
 
@@ -393,7 +526,6 @@ module Multiplier_Control #( parameter WIDTH = 4 ) (
     // FSM logic
     always @( posedge clk or posedge reset ) begin
         if( reset ) begin
-            
             out_high <= { WIDTH{ 1'b0 } };
             out_low <= { WIDTH{ 1'b0 } };
             current_out_high <= { WIDTH{ 1'b0 } };

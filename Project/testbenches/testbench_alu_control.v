@@ -118,7 +118,7 @@ module testbench_alu_control;
     // Sequential ALU Control
     reg [ WIDTH-1:0 ] alu_in1, alu_in2, opcode;
     wire [ WIDTH-1:0 ] alu_high, alu_low;
-    wire alu_done;
+    wire alu_done, alu_flag;
 
     Sequential_ALU #( .WIDTH( WIDTH ) ) alu_control_instance (
         .clk( clk ),
@@ -129,6 +129,7 @@ module testbench_alu_control;
         .in2( alu_in2 ),
         .out_high( alu_high ),
         .out_low( alu_low ),
+        .flag( alu_flag ),
         .done( alu_done )
     );
 
@@ -147,6 +148,7 @@ module testbench_alu_control;
         forever #5 clk = ~clk;
     end
 
+    // Tests for the Individual ALU Control modules
     `define GENERIC_CONTROL( REG1, REG2, CLK, RESET, START, DONE ) \
     begin \
         RESET = 1'b0; START = 1'b0; \
@@ -169,9 +171,38 @@ module testbench_alu_control;
         REG2 = {WIDTH{1'b0}}; \
     end
 
+    // Test for the Overhead ALU Control module
+    `define GENERIC_OPERATIONS( OP, REG1, REG2, CLK, RESET, START, DONE ) \
+    begin \
+        OP = 1'b0; \
+        repeat( BIT_STATE ) begin \
+            RESET = 1'b0; START = 1'b0; \
+            REG1 = { WIDTH{ 1'b0 } }; \
+            repeat( BIT_STATE ) begin \
+                REG2 = { WIDTH{ 1'b0 } }; \
+                repeat( BIT_STATE ) begin \
+                    RESET = 1'b1; @( posedge CLK ); \
+                    RESET = 1'b0; @( posedge CLK ); \
+                    @( posedge CLK ); \
+                    START = 1'b1; @( posedge CLK ); \
+                    START = 1'b0; \
+                    wait( DONE ); \
+                    @( posedge CLK ); @( posedge CLK ); \
+                    REG2 = REG2 + 1; @( posedge CLK ); \
+                end \
+                REG1 = REG1 + 1; @( posedge CLK ); \
+            end \
+            REG1 = {WIDTH{1'b0}}; \
+            REG2 = {WIDTH{1'b0}}; \
+            OP = OP + 1; \
+        end\
+    end
+
     initial begin
         $dumpfile( "waveform7.vcd" );
         $dumpvars( 0, testbench_alu_control );
+
+        `GENERIC_OPERATIONS( opcode, alu_in1, alu_in2, clk, reset, start, alu_done );
 
         #50 $finish;
     end
