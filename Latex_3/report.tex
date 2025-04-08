@@ -83,9 +83,33 @@
 
 \section{Abstract}
 
-\section{Background}
+\section{Background}    % Start by discussing what the previous parts of the project were built upon
+This report is the third part of a project that aims to develop an ALU using Verilog. The ALU could not be as functional as it is currently without
+the previous implementations of the ALU's most basic modules. Throughout the course of the project, design decisions were made to ensure that the ALU
+remained modular and easy to understand. That being said, the ALU was chosen to follow a \textit{hierarchical design} approach, where the ALU is built
+from smaller modules.
 
-\section{Introduction}
+Development of the ALU began with implementing its most basic functions: \textit{Logic Gates}. Implementation starts with making modules for these basic
+gates, which are then used to develop more complex modules down the line. In the first report discussed, the primary focus was ensuring that these logic
+gates received the fed inputs correctly and produced the expected outputs. Futhermore, the development of a basic arithmetic shifter was implemented in
+conjunction to the logic gates, as required by the projects first step. These files can be viewed under the \textbf{src} directory, and more specifically
+refer to the files \textit{bit\_gates.v}, \textit{nbit\_gates.v}, and \textit{arithmetic\_operations.v}. Other modules made in this section include the
+\textit{checks.v} and the \textit{mxnbit\_gates.v} files which offer additional functionality outside of the specifications of the project.
+
+Afterwards, the development of the core functions of the ALU were implemented. This included the basic mathematical operations of an ALU: addition,
+subtraction, multiplication, and division. Following the guidlines developed during the planning of the project, this section of the ALU is built on
+many of the logic gates previously developed and make use of Verilogs \textit{generate} statements to instantiate the appropriate modules for each
+operation. The modules refer to the files \textit{arithmetic\_operations.v} and the later added \textit{sequential\_alu.v} files. In earlier versions
+of this part of the project, the operations for the ALU went through many different iterations and were all shared in the same file. However, after 
+much judication and revisions, a separation of concerns was established and enforced between the two core functions, leading to the split of the files.
+
+\section{Introduction}  % Here, we can lead the discussion over what this final part of the report covers
+An ALU cannot strictly alone be defined by its core functions of addition, subtraction, multiplication, and division. An ALU is also defined by its
+response to produce those results over a period of time. Without a form of control logic in the ALU, it performs its operations all at once, which is not
+how a realistic ALU would operate on hardware. This is where the introduction of a controller is necessary and where this part of the report will focus on.
+The challenge of working and developing a controller introduces a new procedure to the ALU operations already developed. A refactoring of the ALU's modules
+is necessary to accommodate the introduction of a controller to the system. Despite the challenge of refactoring pre existing modules, the ALU overall benefits
+from this change.
 
 \section{Controller Design}
 
