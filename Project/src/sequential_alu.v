@@ -44,8 +44,8 @@ module Sequential_ALU #( parameter WIDTH = 4 ) (
     input wire [ 3:0 ] opcode,
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
-    output reg [ WIDTH-1:0 ] out_high,   // Can represent the quotient, sum, difference, or shift result
-    output reg [ WIDTH-1:0 ] out_low, // Can represent the remainder or shift overflow
+    output reg [ WIDTH-1:0 ] out_high,   // Can represent the high output of multiplication, the remainder, or shift overflow
+    output reg [ WIDTH-1:0 ] out_low, // Can represent the quotient, sum, difference, or shift result
     output reg flag,    // Can represent the carry and borrow flags
     output reg done
 );

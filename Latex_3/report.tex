@@ -117,9 +117,61 @@ would process instructions fed into it over multiple clock cycles. This change i
 managing its time and resources more effectively. In this report, a focus on the developmental process of the ALU controller is discussed, including the
 methods used to implement the controller, the challenges faced during development, and the solutions that were developed to overcome these challenges.
 
+% Enhance the section by potentially adding how clock signals affect overall system performance or maybe the hardware implications?
+% The runtime of the ALU is around 300,000 nanoseconds, which is 1/3 of a millisecond. This is a very small amount of time, but it is still
+% significant in the context of a computer system. 
 \section{Controller Design}
+The controller is the most important aspect of an ALU, as it is responsible for directing the flow of data and operations within the ALU. A controller
+is a sequential circuit that takes in inputs and produces outputs based on the current state of the system. 
+
+% Further enhancements could include comparisons between my design decisions and those done professionally. This would add more context 
+% to my design decisions and show how they are similar or different to those done in the industry.
+\subsection{Controller Inputs and Outputs}
+To design the controller, defining its inputs and outputs is essential. There are two types of inputs to a controller: the timing inputs and the ALU inputs.
+The timing inputs are the signals that are used to control the timing of the controller's operations and include the following:
+\begin{itemize}
+    \item \textbf{Clock}: The clock signal is used to synchronize the operations of the ALU. It is a periodic signal that is used to trigger the controller's state transitions.
+    \item \textbf{Reset}: The reset signal is used to initialize the controller to a known state. It is an active high signal that resets the controller's state.
+    \item \textbf{Start}: The start signal is used to indicate that the ALU should begin processing an operation. It is an active high signal that triggers the controller to start its operation.
+\end{itemize}
+
+The ALU inputs are the signals that are used to determine and perform the operation to be performed by the ALU. These inputs include the following:
+\begin{itemize}
+    \item \textbf{Opcode}: The opcode is a binary representation of the operation to be performed by the ALU. It is a multi-bit signal that is used to select the operation to be performed.
+    \item \textbf{Input 1}: The first input to the ALU. It is a multi-bit signal that is used as the first operand for the operation.
+    \item \textbf{Input 2}: The second input to the ALU. It is a multi-bit signal that is used as the second operand for the operation.
+\end{itemize}
+
+The primary output is split into three outputs: a high, a low, and a flag. This is to accommodate the different methods of outputting from the individual ALU operations.
+The outputs are as follows:
+\begin{itemize}
+    \item \textbf{High Output}: The high output is a multi-bit signal that is used to indicate the high portion of outputs. Primarily used in multiplication, division, or shift operations.
+    \item \textbf{Low Output}: The low output is a multi-bit signal that is used to indicate the low portion of outputs. This is used to represent the remaining operations such as addition or subtraction
+        as well as the low portion of multiplication and division or the shift result.
+    \item \textbf{Flag}: The flag is a single bit signal that is used to represent carry, borrow, or comparison flags.
+\end{itemize}
+
+The controller has an output to mark its completion labeled as \textit{done}. This is a single bit signal that is used to indicate that the ALU has completed its operation and is ready to output
+the result.
 
 \subsection{Separation of Concerns}
+In order to facilitate the development of the controller, a separation was established between the main ALU controller and the sub-controllers. 
+\begin{itemize}
+    \item \textbf{Sequential Controller}: Acts as the main controller for the ALU. It is responsible for managing the overall flow of the ALU operations and directing the sub-controllers to perform their respective operations.
+    \item \textbf{Sub-Controllers}: These are the individual controllers that are responsible for performing the specific operations of the ALU. Each sub-controller is responsible for a specific operation, such as addition, 
+        subtraction, multiplication, or division.
+\end{itemize}
+
+\subsection{When to Use a Controller?}
+In the design of the ALU's controller, it was important to ask when to develop a controller for a specific module. Not every operation in an ALU requires a controller, as in some cases operations
+are done in one clock cycle as opposed to a span of cycles. Since the combinational logic was split in its core operations, it was deduced that those operations, operations with a \textit{core} unit 
+attached to them would need to be controlled by some central controller. This meant that modules such as the shifter, the comparator, and the logic gates would not need a controller, while remaining
+modules would.
+
+Furthermore, since the ALU controller was split into two function, it would not be ideal for both the ALU controller and the sub-controllers to be sequential. The interactions between each controllers
+cycles would create more complicated timing mismatches, which in turn would require more complex logic to manage. So it was declared that the ALU controller would solely be combinational, while still
+housing the timing inputs to feed into the sub-controllers; those of which did function on the timing inputs. This design decision allowed for the separation of concerns between the different controllers
+developed for the ALU and allowed for a more modular design.
 
 \section{Testbench Development}
 
