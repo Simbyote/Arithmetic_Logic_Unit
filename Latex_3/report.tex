@@ -9,8 +9,7 @@
 \usepackage{doi}    
 \usepackage{listings}
 \usepackage{xcolor}
-\usepackage[american]{circuitikz}
-\usepackage{tikz}
+\usepackage{tikz-timing}    % timing diagrams
 \usepackage{pgfplots}
 \usepackage{pgfplotstable}
 \usepackage{float}
@@ -117,15 +116,10 @@ would process instructions fed into it over multiple clock cycles. This change i
 managing its time and resources more effectively. In this report, a focus on the developmental process of the ALU controller is discussed, including the
 methods used to implement the controller, the challenges faced during development, and the solutions that were developed to overcome these challenges.
 
-% Enhance the section by potentially adding how clock signals affect overall system performance or maybe the hardware implications?
-% The runtime of the ALU is around 300,000 nanoseconds, which is 1/3 of a millisecond. This is a very small amount of time, but it is still
-% significant in the context of a computer system. 
 \section{Controller Design}
 The controller is the most important aspect of an ALU, as it is responsible for directing the flow of data and operations within the ALU. A controller
 is a sequential circuit that takes in inputs and produces outputs based on the current state of the system. 
 
-% Further enhancements could include comparisons between my design decisions and those done professionally. This would add more context 
-% to my design decisions and show how they are similar or different to those done in the industry.
 \subsection{Controller Inputs and Outputs}
 To design the controller, defining its inputs and outputs is essential. There are two types of inputs to a controller: the timing inputs and the ALU inputs.
 The timing inputs are the signals that are used to control the timing of the controller's operations and include the following:
@@ -168,12 +162,113 @@ are done in one clock cycle as opposed to a span of cycles. Since the combinatio
 attached to them would need to be controlled by some central controller. This meant that modules such as the shifter, the comparator, and the logic gates would not need a controller, while remaining
 modules would.
 
-Furthermore, since the ALU controller was split into two function, it would not be ideal for both the ALU controller and the sub-controllers to be sequential. The interactions between each controllers
-cycles would create more complicated timing mismatches, which in turn would require more complex logic to manage. So it was declared that the ALU controller would solely be combinational, while still
-housing the timing inputs to feed into the sub-controllers; those of which did function on the timing inputs. This design decision allowed for the separation of concerns between the different controllers
-developed for the ALU and allowed for a more modular design.
+Furthermore, since the ALU controller was split into two function, it would not be ideal for both the ALU controller and the sub-controllers to be sequential. Had both controllers included sequential logic, 
+the interaction between their clock cycles would create more complicated timing mismatches, which in turn would require more complex logic to manage. So it was declared that the ALU controller would solely 
+be combinational, while still housing the timing inputs to feed into the sub-controllers; those of which did function on the timing inputs. This design decision allowed for the separation of concerns between 
+the different controllers developed for the ALU and allowed for a more modular design.
 
 \section{Testbench Development}
+To test the functionality of the controllers developed, two generic tests were designed and made, similarly to how they were discussed in the previous report, \textit{Part Two}. These tests iterated through
+every potential input combination possible for the ALU. More specifically, it incremented the 3 primary inputs in the ALU: the opcode, input 1, and input 2. 
+
+\subsection{Testbench Design}
+The tests also needed to include some method of tracking the clock and reset signals so that the ALU could be properly initialized and run for each change in input. In order to properly capture the correct 
+change in output for each change in input, posedge detections were added into the generic tests. These posedges are used to tell the controller to update its state and output registers. However, applying a
+posedge requires a careful consideration for where they are placed in the generic tests to avoid saturating the system with too many posedges and thatv it updates its outputs accordingly. The general rules
+to follow when adding posedges are:
+\begin{itemize}
+    \item \textbf{Posedge Between Input Change}: This is to ensure that the controller updates its state and output registers before the next input change.
+    \item \textbf{Posedge Between Control Transitions}: This is to ensure that the controller updates its state and output registers before the next control transition.
+    \item \textbf{Posedge After Setting Done Signals}: This is to ensure that the controller updates its state and output registers after the done signal is set.
+\end{itemize}
+
+\subsection{Testbench Implementation}
+The testbench was implemented in a separate file, \textit{testbench\_sequential.v}. This file tested two both the ALU controller and the sub-controllers.
+
+\subsubsection{Sub-Controller Testing}
+Testing was first done on the sub-controllers, as they
+relied on their \textit{core} units. Developing these controllers first allowed for a more modular design to be implemented across the different sub-controllers, as we would be testing for similar functionality
+across the different modules. The testbench developed for the sub-controllers is shown below:
+\begin{lstlisting}[language=Verilog]
+    `define GENERIC_CONTROL( REG1, REG2, CLK, RESET, START, DONE ) \
+    begin \
+        RESET = 1'b0; START = 1'b0; \
+        REG1 = { WIDTH{ 1'b0 } }; \
+        repeat( BIT_STATE ) begin \
+            REG2 = { WIDTH{ 1'b0 } }; \
+            repeat( BIT_STATE ) begin \
+                RESET = 1'b1; @( posedge CLK ); \
+                RESET = 1'b0; @( posedge CLK ); \
+                @( posedge CLK ); \
+                START = 1'b1; @( posedge CLK ); \
+                START = 1'b0; \
+                wait( DONE ); \
+                @( posedge CLK ); @( posedge CLK ); \
+                REG2 = REG2 + 1; @( posedge CLK ); \
+            end \
+            REG1 = REG1 + 1; @( posedge CLK ); \
+        end \
+        REG1 = {WIDTH{1'b0}}; \
+        REG2 = {WIDTH{1'b0}}; \
+    end
+\end{lstlisting}
+
+The test was implemented using a macro to allow for a generic test to be used with any of the different controllers. The macro takes in the following parameters:
+\begin{itemize}
+    \item \textbf{REG1}: The first register to be tested. This is the register that will be used to store the first input to the ALU.
+    \item \textbf{REG2}: The second register to be tested. This is the register that will be used to store the second input to the ALU.
+    \item \textbf{CLK}: The clock signal for the ALU. This is the signal that will be used to synchronize the operations of the ALU.
+    \item \textbf{RESET}: The reset signal for the ALU. This is the signal that will be used to initialize the ALU to a known state.
+    \item \textbf{START}: The start signal for the ALU. This is the signal that will be used to indicate that the ALU should begin processing an operation.
+    \item \textbf{DONE}: The done signal for the ALU. This is the signal that will be used to indicate that the ALU has completed its operation and is ready to output the result.
+\end{itemize}
+
+Each timing input is carefully placed to ensure that the system is able to record and process the inputs correctly. One mismatch in the timing of the inputs could
+lead to a loss of information, where old data is saved or data that does not exist yet is used. This is why the timing of the inputs is so important in the design of
+the controller. 
+
+\subsubsection{Clock Signal Implementation}
+Notice that the clock signal is not included in the macro directly; there is no CLK that is incremented in the macro. Rather, the clock is initialzied outside of the macro, 
+in the testbench. There are a few standard methods for which to increment a clock depending on the application. For the purpose of this testbench, a simple implementation
+was used to increment the clock:
+\begin{lstlisting}[language=Verilog]
+    initial begin
+        clk = 1'b0;
+        # Inverts the clock every 5 time units
+        forever #5 clk = ~clk;
+    end
+\end{lstlisting}
+
+This implementation increments the clock signal every 5 time units, which is set to 1ns for the purpose of this testbench. This means that the clock signal will toggle every 5ns
+forever, until the simulation is stopped. This is a simple implementation of a clock signal that is used to synchronize the operations of the ALU.
+
+\subsubsection{ALU Controller Testing}
+Testing for the ALU controller was done in a similar fashion to the sub-controllers, with the only difference being an extra input to the macro: the opcode. The opcode is placed
+at the beginning of the macro, as it is the first input to be changed. The opcode is then incremented in a loop after the remaining test is concluded. For every opcode, the generic
+test listed above is conducted.
+
+\subsection{Testbench Timing Diagrams}
+At the lowest level of the testbench, the clock, reset, and start signals make up a single input change. This change is represented by the timing diagram shown below.
+\begin{figure}[H]
+    \centering
+    \begin{tikztimingtable}[timing/slope=0, xscale=1.2]
+    CLK & 12{LH} \\
+    RST & H 22L 1H \\
+    START & 5L 2H 17L \\
+    DONE & 18L 2H 4L \\
+    \end{tikztimingtable}
+    \caption{Timing diagram showing one ALU controller activation cycle with a reset phase, input start pulse, and synchronization to the system clock.}
+\end{figure}
+
+The diagram illustrates the signal timing associated with a single change in input. The \texttt{CLK} signal remains periodic with a constant cycle length. This is the
+result of the code mentioned in the \textit{Clock Signal Implementation} section. The \texttt{RST} (reset) signal is asserted at the beginning to initialize the system and then
+deasserted after the first rising edge. It remains low for most of the operation and is reasserted at the end to reset the state for the next operation. The \texttt{START} signal 
+is asserted for two clock cycles after reset is deasserted, signaling the controller to begin executing the operation based on current inputs. The \texttt{DONE} signal is asserted 
+for two clock cycles once the operation is complete, indicating the result is available and the controller is ready for the next input.
+
+All control signals (\texttt{RST}, \texttt{START}, and \texttt{DONE}) are held high for \textit{two full clock cycles} rather than one to ensure the controller registers each transition
+reliably. This design choice prevents race conditions and ensures that state changes are properly latched. The effect of this timing strategy will become more evident in later sections
+when the behavior of the sub-controllers is analyzed.
 
 \section{Controller Implementation}
 
