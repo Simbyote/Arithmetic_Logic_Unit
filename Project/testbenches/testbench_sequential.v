@@ -23,6 +23,16 @@ module testbench_alu_control;
         .done( add_done )
     );
 
+    // Latch the output signals for clearer waveform
+    reg [WIDTH-1:0] add_latched;
+    reg carry_latched;
+    always @(posedge clk) begin
+        if( add_done ) begin
+            add_latched <= add_out;
+            carry_latched <= final_carry;
+        end
+    end
+
     /*
      * Subtraction_Control module instantiation
      */
@@ -40,16 +50,6 @@ module testbench_alu_control;
         .final_borrow( final_borrow ),
         .done( sub_done )
     );
-
-    // Latch the output signals for clearer waveform
-    reg [WIDTH-1:0] add_latched;
-    reg carry_latched;
-    always @(posedge clk) begin
-        if( add_done ) begin
-            add_latched <= add_out;
-            carry_latched <= final_carry;
-        end
-    end
 
     // Latch the output signals for clearer waveform
     reg [WIDTH-1:0] sub_latched;

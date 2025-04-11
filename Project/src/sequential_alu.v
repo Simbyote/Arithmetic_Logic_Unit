@@ -55,7 +55,7 @@ module Sequential_ALU #( parameter WIDTH = 4 ) (
                     MUL = 4'b0010,
                     DIV = 4'b0011,
                     SHL = 4'b0100,
-                    SHR = 4'b0101,
+                    SHA = 4'b0101,
                     LT  = 4'b0110,
                     GT  = 4'b0111,
                     EQ  = 4'b1000,
@@ -64,8 +64,6 @@ module Sequential_ALU #( parameter WIDTH = 4 ) (
                     XOR = 4'b1011,
                     NOT = 4'b1100;
     reg [ 3:0 ] state;
-
-    // Internal wires
 
     // Addition Controller
     wire [ WIDTH-1:0 ] add_out;
@@ -239,7 +237,7 @@ module Sequential_ALU #( parameter WIDTH = 4 ) (
                 out_low = shl_overflow;
                 done = 1'b1;
             end
-            SHR: begin
+            SHA: begin
                 out_high = shr_out;
                 out_low = shr_overflow;
                 done = 1'b1;

@@ -270,7 +270,142 @@ All control signals (\texttt{RST}, \texttt{START}, and \texttt{DONE}) are held h
 reliably. This design choice prevents race conditions and ensures that state changes are properly latched. The effect of this timing strategy will become more evident in later sections
 when the behavior of the sub-controllers is analyzed.
 
-\section{Controller Implementation}
+\subsection{Testbench Module Instantiations}
+In order to use the macro in the testbench, the modules to be tested need to be instantiated in the testbench. This is done by creating instances of the modules that are to be tested
+and passed into the macro. One example of this is shown below, where the \textit{Addition\_Control} module is instantiated in the testbench:
+\begin{lstlisting}[language=Verilog]
+    /*
+     * Addition_Control module instantiation
+     */
+    reg [ WIDTH-1:0 ] add_in1, add_in2;
+    wire [ WIDTH-1:0 ] add_out;
+    wire add_done, final_carry;
+
+    Addition_Control #( .WIDTH( WIDTH ) ) add_control_instance (
+        .clk( clk ),
+        .reset( reset ),
+        .start( start ),
+        .in1( add_in1 ),
+        .in2( add_in2 ),
+        .out( add_out ),
+        .final_carry( final_carry ),
+        .done( add_done )
+    );
+
+    // Latch the output signals for clearer waveform
+    reg [WIDTH-1:0] add_latched;
+    reg carry_latched;
+    always @(posedge clk) begin
+        if( add_done ) begin
+            add_latched <= add_out;
+            carry_latched <= final_carry;
+        end
+    end
+\end{lstlisting}
+
+Every module tested is instantiated the same way, with differences being the naming of input variables and module names. 
+
+\subsubsection{Latch Implementation}
+It is important to note the use of a \textit{latch} for the output signals. The outputs from each module vary or oscillate with the periodic clock due to the internal combinational 
+circuitry, which can produce intermediate values between clock edges. To avoid an oscillating output, the output signal can be latched using a flip-flop register. The latching is 
+done using a simple always block that captures the output of the module when the \texttt{DONE} signal is asserted. This ensures a stable output value is captured until the next 
+operation is completed.
+
+\section{ALU Controller}
+The ALU controller is the top-level controller for the ALU, as it designates the flow of data and operations within the ALU. The inputs and outputs of the ALU controller are discussed
+in the \textit{Controller Inputs and Outputs} section.
+
+\subsection{ALU Operations}
+The ALU controller is a combinational circuit that is run using a finite state machine which helps it to organize and manage the different operations of the ALU. In order to maintain
+the modularity and hierarchical design, the ALU instantiates the sub-controllers before entering its FSM. Because of this, every operation in the ALU is computed per input. However,
+once the FSM is entered, only the specified operation is transferred and outputted by the ALU controller module.
+
+\subsubsection{ALU Controller States}
+The ALU controller is designed to handle the following operations with the assigned opcodes:
+\begin{figure}[H]
+    \centering
+    \begin{tabular}{|c|c|c|}
+        \hline
+        \textbf{Operation} & \textbf{Opcode}    \\
+        \hline
+        \texttt{Addition} & 0000 \\
+        \texttt{Subtraction} & 0001 \\
+        \texttt{Multiplication} & 0010 \\
+        \texttt{Division} & 0011 \\
+        \texttt{Logical Shift} & 0100 \\
+        \texttt{Arithmetic Shift} & 0101 \\
+        \texttt{Greater Than} & 0110 \\
+        \texttt{Less Than} & 0111 \\
+        \texttt{Equal To} & 1000 \\
+        \texttt{Bitwise AND} & 1001 \\
+        \texttt{Bitwise OR} & 1010 \\
+        \texttt{Bitwise XOR} & 1011 \\
+        \texttt{Bitwise NOT} & 1100 \\
+        \hline
+    \end{tabular}
+    \caption{ALU Opcode Table}
+\end{figure}
+
+One thing to note about the ALU operations is the difference between the logical and arithmetic shifts. \textit{Logical shifts} are used to shift the bits of a number to the left or
+right, filling the empty bits with zeros. This is useful for unsigned numbers, where the sign of the number does not matter. \textit{Arithmetic shifts}, on the other hand, are used to shift
+the bits of a signed number to the left or right, filling the empty bits with the sign bit. This is useful for signed numbers, where the sign of the number matters. While these options
+are not explicitly used, they still provide a useful starting point if additional features wwere to be added to the ALU in the future.
+
+\subsubsection{Sub-Controller Instantiations}
+The ALU controller instantiates the sub-controllers for each operation to be performed. This is a feature of the ALU controller that allows for the modularity of the design to be maintained
+more easily. This also allows for the ALU to pass down the responsibility of the operations to the sub-controllers, rather than having all the logic in the ALU controller. However, this does
+impact the performance of the ALU, as the ALU controller must wait for the sub-controllers to complete their operations before it can proceed, even when the operation is not needed.
+
+Each sub-controller is instantiated such like:
+\begin{lstlisting}[language=Verilog]
+    // Addition Controller
+    wire [ WIDTH-1:0 ] add_out;
+    wire add_done, final_carry;
+
+    Addition_Control #( .WIDTH( WIDTH ) ) adder_instance (
+        .clk( clk ),
+        .reset( reset ),
+        .start( start ),
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( add_out ),
+        .final_carry( final_carry ),
+        .done( add_done )
+    );
+\end{lstlisting}
+
+Most of the sub-controllers are instantiated in a similar fashion, with the differences being the naming conventions and the output signals. The instantiations allow for a modular and cleaner design, 
+as the ALU controller becomes a simple wrapper around the sub-controllers. This allows for the ALU controller to be easily modified or extended in the future, as new operations can be added by simply
+adding a new sub-controller and updating the ALU controller to include the new operation. This is a key feature of the hierarchical design approach taken in this project.
+
+\subsubsection{ALU Finite State Machine}
+The finite state machine for the ALU controller is designed to be purely combinational. It selects and coordinates which of the sub-controllers outputs to use based on the opcode. The FSM for
+the ALU was originally designed to be sequential, but due to timing mismatches between the ALU controller and the sub-controllers, it was changed to be purely combinational. This change
+allows for easier debugging and readability at the cost of performance. The FSM is designed to be simple and easy to understand and is implemented using a case statement:
+\begin{lstlisting}[language=Verilog]
+    always @(*) begin
+        // Initialize the output signals
+        out_high = { WIDTH{ 1'b0 } };
+        out_low = { WIDTH{ 1'b0 } };
+        flag = 1'b0;
+        done = 1'b0;
+
+        case( opcode )
+            ADD: begin
+                out_low = add_out;
+                flag = final_carry;
+                done = add_done;
+            end
+            SUB: begin
+                out_low = sub_out;
+                flag = final_borrow;
+                done = sub_done;
+            end
+            ... and so on
+\end{lstlisting}
+
+This pattern continues for all available operations, where the different outputs are assigned based on which operation is selected. Not every output in the ALU controller is assigned due to
+either a limited representation of the output or the lack of need for the output. Due to how the operations performed have varying output sizes, the outputs from the ALU remain flexible.
 
 \subsection{Adder Controller}
 
@@ -290,21 +425,6 @@ when the behavior of the sub-controllers is analyzed.
 
 \section{Thoughts and Notes}
 \begin{itemize}
-    \item \textbf{How Does a Controller Work?}: The controller circuit that will control the ALU operations will need to be split into its distinct operations.
-        These operations can be distinguised as the ALU\_Controller and the Sub\_Controllers. The ALU\_Controller will maintain responsibility for the overall
-        flow of the ALU operations, using an opcode to determine which operation to perform. The Sub\_Controllers will be responsible for the individual
-        operations themselves and return their associated results to the ALU\_Controller.
-    \item \textbf{Refactoring of Current Implementations}: Because we will need to implement \textit{sequential logic} for the controller, we will need to revisit
-        out implementations for our ALU modules and develop them similarly to how we developed out \textit{Division\_Core} module. The main method that is used in
-        the \textit{Division\_Core} module is that it processes its operation \textit{one step at a time} as opposed to all at once (like how it is currently
-        developed at the time of writing this).
-    \item \textbf{Posedge Design}: The controller will need to run a clock and a reset signal to ensure operations are performed sequentially. Posedges are used
-        to control the overall change in inputs of the controller. Applying a posedge requires a careful consideration for where they are placed in a system to
-        both maximize efficiency and ensure that the system is functioning as intended. The general rules to follow for when to add a posedge are:
-        \begin{itemize}
-            \item \textbf{Posedge Between Input Change} \item \textbf{Posedge Between Control Transitions} \item \textbf{Posedge After Setting Done Signals}
-        \end{itemize}
-        Where a Macro is used to generalize the testing for the different controllers to be developed.
     \item \textbf{Missing Final Bit in Multiplier}: Refactoring of the current Multiplier was necessary so that it can run sequentially rather than all at once.
         However, a few bugs were encountered while trying to implement this new feature. The main issue with the final product was that the control logic was 
         performing what seemed like \textit{one extra step} in the multiplication step. More specifically, this extra step was found to be at every instance of
@@ -318,17 +438,7 @@ when the behavior of the sub-controllers is analyzed.
         being assigned the value of the output of the adder before the adder had finished its operation. To resolve this issue, we split the function into two 
         different clock cycles, one for the addition and one for the assignment of the output register. This allowed the adder to finish its operation before the
         output register was assigned the value of the output of the adder.
-    \item \textbf{Developing the ALU Flow}: To properly select which ALU operation to perform, we needed to develop a control that would handle both the individual
-        operations and the the overall ALU operation over  period of time, since in reality, things take time to process. Two distictions are made between the 
-        controllers however: The ALU\_Controller is responsible for the overall flow of the ALU operations, selecting the proper ALU operation to compute based on an
-        opcode, and the Sub\_Controllers, whcih are responsible for the individual operations and are aptly named after the operation they are performing. THe main
-        difference between these is that the Sub\_Controllers run on posedges, while the ALU\_Controller runs without a posedge. The choice was to avoid any confusion
-        in the ALU\_Controller, since it is not a sequential operation.
 \end{itemize}
-
-Tip: Use $input{}$ for Modular Diagrams
-If your report grows, put each diagram in a .tex snippet file and $input{tikz/alu_diagram.tex}$ 
-into the main doc — keeps things clean and flexible.
 
 \end{document}
 
