@@ -408,9 +408,43 @@ This pattern continues for all available operations, where the different outputs
 either a limited representation of the output or the lack of need for the output. Due to how the operations performed have varying output sizes, the outputs from the ALU remain flexible.
 
 \section{Sub-Controllers}
-\subsection{General Sub-Controller Operation}
+The sub-controllers are the individual controllers of their respective operation. Of the operations performed by the ALU, there are only four operations that required sub-controllers:
+\begin{itemize}
+    \item \textbf{Addition}
+    \item \textbf{Subtraction}
+    \item \textbf{Multiplication}
+    \item \textbf{Division}
+\end{itemize}
+
+Each of these operations performed their calculations in a series of steps, and originally used loops to perform their operations. However, after some refactoring of the modules, the operations
+were changed to accommodate the new design of the ALU. Each operation now included a state table and an FSM to determine where in the calculation process the operation was. This in turn
+added additional clarity to the design of the ALU, and furthermore, allowed the operations to be performed in a sequential manner rather than combinational. It is important to note that
+this is in accordance to how real hardware operates, as hardware takes time to produce results.
+
+\subsection{Sub-Controller Operation}
+Each sub-controller runs in a sequential manner. The sub-controller is activated by the ALU controller, which then runs through its FSM to perform the operation. The FSM is brokem down into
+parts that are responsible for the different steps of the operations and all remain relatively similar in design. The general structure of the FSM is as follows:
+\begin{itemize}
+    \item \textbf{IDLE}: The initial state of the FSM. The FSM waits for the start signal to be asserted before proceeding to the next state.
+    \item \textbf{INIT}: The initialization state of the FSM. The FSM initializes the input registers and sets the output registers to zero.
+    \item \textbf{STEP}: The main state of the FSM. The FSM performs the operation and updates the output registers.
+    \item \textbf{LOAD}: The load state of the FSM. The FSM loads the output registers with the final result.
+    \item \textbf{DONE}: The final state of the FSM. The FSM sets the done signal and resets the state to IDLE.
+\end{itemize}
+
+While most of the states are similar across the different sub-controllers, the \textit{INIT} and \textit{LOAD} states are featured in their own unique manner. The \textit{INIT} state is used to
+initialize the input registers in the \textit{addition} and \textit{subtraction} operations while the \textit{LOAD} state is used to load registers in the \textit{multiplication} and \textit{division} 
+operations. This is due to the designs of each respective operation and will be discussed in more detail in the following sections. However, the FSM logic for the sub-controllers are all designed
+to move through each state as the operation is performed.
 
 \subsection{Adder Controller}
+The Adder controller is the first of the sub-controllers developed and is responsible for performing the addition operation. It consists of its state table, FSM, and the instantiation of the
+\textit{Adder Core} unit. The adder controller uses 4 of the states discussed above: \textit{INIT}, \textit{STEP}, \textit{LOAD}, and \textit{DONE}. It then moves through the FSM to perform the addition
+sequentially, utilizing the \textit{Adder Core} unit to perform the addition operation per clcok cycle. The \textit{Adder Core} unit performs a single step of the addition computation, which is adding
+2 bits together of an input number then adding a carry bit if necessary. The \textit{Adder Core} then outputs the result of the addition and the carry bit if there is one to be used in the next operation,
+saved by the addition controller.
+
+
 \subsubsection{Adder Controller States}
 \subsubsection{Adder Instantiations}
 \subsubsection{Adder FSM}
@@ -429,11 +463,6 @@ either a limited representation of the output or the lack of need for the output
 \subsubsection{Divider Controller States}
 \subsubsection{Divider Instantiations}
 \subsubsection{Divider FSM}
-
-\subsection{Comparison Controllers}
-\subsubsection{Comparison Controller States}
-\subsubsection{Comparison Instantiations}
-\subsubsection{Comparison FSM}
 
 \section{Waveform Analysis}
 
