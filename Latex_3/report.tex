@@ -10,6 +10,7 @@
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{tikz-timing}    % timing diagrams
+\usepackage{tikz}
 \usepackage{pgfplots}
 \usepackage{pgfplotstable}
 \usepackage{float}
@@ -68,6 +69,7 @@
 
 \lstset{style=mystyle}
 \hypersetup{hidelinks}  % remove colored boxes around links
+\usetikzlibrary{automata, positioning}  % automata library for FSMs
 
 \begin{document}
 \maketitle
@@ -316,9 +318,10 @@ The ALU controller is the top-level controller for the ALU, as it designates the
 in the \textit{Controller Inputs and Outputs} section.
 
 \subsection{ALU Operations}
-The ALU controller is a combinational circuit that is run using a finite state machine which helps it to organize and manage the different operations of the ALU. In order to maintain
-the modularity and hierarchical design, the ALU instantiates the sub-controllers before entering its FSM. Because of this, every operation in the ALU is computed per input. However,
-once the FSM is entered, only the specified operation is transferred and outputted by the ALU controller module.
+The ALU controller directs the flow of data using a finite state machine, which manages operation selection and output coordination. Although FSMs are typically sequential, the ALU FSM
+was designed to act as a purely combinational block to mitigate timing mismatches between the controller and sub-controllers. In order to maintain the modularity and hierarchical design, 
+the ALU instantiates the sub-controllers before entering its FSM. Because of this, every operation in the ALU is computed per input. However, once the FSM is entered, only the specified 
+operation is transferred and outputted by the ALU controller module.
 
 \subsubsection{ALU Controller States}
 The ALU controller is designed to handle the following operations with the assigned opcodes:
@@ -348,8 +351,8 @@ The ALU controller is designed to handle the following operations with the assig
 
 One thing to note about the ALU operations is the difference between the logical and arithmetic shifts. \textit{Logical shifts} are used to shift the bits of a number to the left or
 right, filling the empty bits with zeros. This is useful for unsigned numbers, where the sign of the number does not matter. \textit{Arithmetic shifts}, on the other hand, are used to shift
-the bits of a signed number to the left or right, filling the empty bits with the sign bit. This is useful for signed numbers, where the sign of the number matters. While these options
-are not explicitly used, they still provide a useful starting point if additional features wwere to be added to the ALU in the future.
+the bits of a signed number to the left or right, filling the empty bits with the sign bit. This is useful for signed numbers, where the sign of the number matters. Both of these shifts carry
+their own control signals within them and are used to determine the direction of the shift, the amount of bits to shift, and the fill bit to use. 
 
 \subsubsection{Sub-Controller Instantiations}
 The ALU controller instantiates the sub-controllers for each operation to be performed. This is a feature of the ALU controller that allows for the modularity of the design to be maintained
@@ -381,7 +384,9 @@ adding a new sub-controller and updating the ALU controller to include the new o
 \subsubsection{ALU Finite State Machine}
 The finite state machine for the ALU controller is designed to be purely combinational. It selects and coordinates which of the sub-controllers outputs to use based on the opcode. The FSM for
 the ALU was originally designed to be sequential, but due to timing mismatches between the ALU controller and the sub-controllers, it was changed to be purely combinational. This change
-allows for easier debugging and readability at the cost of performance. The FSM is designed to be simple and easy to understand and is implemented using a case statement:
+allows for easier debugging and readability at the cost of performance. Sequential logic is typically easier to debug and understand than combinational logic, since the flow of the data using
+case statements and a clock is easier to follow than a looped combinational circuit. However, this change does not impact the functionality of the ALU, as the ALU controller is still able to
+perform its operations correctly. The FSM is shown below:
 \begin{lstlisting}[language=Verilog]
     always @(*) begin
         // Initialize the output signals
@@ -417,12 +422,12 @@ The sub-controllers are the individual controllers of their respective operation
 \end{itemize}
 
 Each of these operations performed their calculations in a series of steps, and originally used loops to perform their operations. However, after some refactoring of the modules, the operations
-were changed to accommodate the new design of the ALU. Each operation now included a state table and an FSM to determine where in the calculation process the operation was. This in turn
-added additional clarity to the design of the ALU, and furthermore, allowed the operations to be performed in a sequential manner rather than combinational. It is important to note that
-this is in accordance to how real hardware operates, as hardware takes time to produce results.
+were changed to accommodate the new design of the ALU. Each sub-controller now incorporates a finite state machine (FSM) with a well-defined state transition process to manage the step-by-step 
+execution of its operation. This in turn added additional clarity to the design of the ALU, and furthermore, allowed the operations to be performed in a sequential manner rather than combinational. 
+It is important to note that this is in accordance to how real hardware operates, as hardware takes time to produce results.
 
 \subsection{Sub-Controller Operation}
-Each sub-controller runs in a sequential manner. The sub-controller is activated by the ALU controller, which then runs through its FSM to perform the operation. The FSM is brokem down into
+Each sub-controller runs in a sequential manner. The sub-controller is activated by the ALU controller, which then runs through its FSM to perform the operation. The FSM is broken down into
 parts that are responsible for the different steps of the operations and all remain relatively similar in design. The general structure of the FSM is as follows:
 \begin{itemize}
     \item \textbf{IDLE}: The initial state of the FSM. The FSM waits for the start signal to be asserted before proceeding to the next state.
@@ -432,22 +437,143 @@ parts that are responsible for the different steps of the operations and all rem
     \item \textbf{DONE}: The final state of the FSM. The FSM sets the done signal and resets the state to IDLE.
 \end{itemize}
 
+The done signal is asserted by sub-controllers to indicate completion of their operation. The ALU controller monitors these flags to determine when to latch the outputs and re-enter the IDLE state.
+This handshake ensures synchronization between sequential and combinational logic blocks.
+
+\begin{tikzpicture}[->, node distance=2.5cm, every state/.style={thick, minimum size=1.2cm}]
+    \node[state] (A) {INIT};
+    \node[state] (B) [right of=A] {STEP};
+    \node[state] (C) [right of=B] {LOAD};
+    \node[state] (D) [below of=B] {DONE};
+
+    \path
+        (A) edge node[above] {start} (B)
+        (B) edge[loop above] node {repeat} (B)
+        (B) edge[bend left] node {} (C)
+        (C) edge[bend left] node {} (B)
+        (B) edge node {} (D)
+        (D) edge[bend left] node[below] {done} (A);
+\end{tikzpicture}
+
+\begin{tikzpicture}[->, node distance=2.5cm, every state/.style={thick, minimum size=1.2cm}]
+    \node[state] (A) {IDLE};
+    \node[state] (B) [right of=A] {INIT};
+    \node[state] (C) [right of=B] {STEP};
+    \node[state] (D) [right of=C] {DONE};
+
+    \path
+        (A) edge node[above] {start} (B)
+        (B) edge node[above] {init} (C)
+        (C) edge node[above] {step} (D)
+        (C) edge[loop above] node {repeat} (C)
+        (D) edge[bend left] node[below] {done} (A);
+\end{tikzpicture}
+
+
+
 While most of the states are similar across the different sub-controllers, the \textit{INIT} and \textit{LOAD} states are featured in their own unique manner. The \textit{INIT} state is used to
 initialize the input registers in the \textit{addition} and \textit{subtraction} operations while the \textit{LOAD} state is used to load registers in the \textit{multiplication} and \textit{division} 
 operations. This is due to the designs of each respective operation and will be discussed in more detail in the following sections. However, the FSM logic for the sub-controllers are all designed
 to move through each state as the operation is performed.
 
+Furthermore, every operation receives a section before the FSM case logic is entered that initializes any internal wires and output registers used in the operation. This helps each input to be independant
+from one another and avoid any mismatches in the timing of the inputs.
+
 \subsection{Adder Controller}
-The Adder controller is the first of the sub-controllers developed and is responsible for performing the addition operation. It consists of its state table, FSM, and the instantiation of the
-\textit{Adder Core} unit. The adder controller uses 4 of the states discussed above: \textit{INIT}, \textit{STEP}, \textit{LOAD}, and \textit{DONE}. It then moves through the FSM to perform the addition
-sequentially, utilizing the \textit{Adder Core} unit to perform the addition operation per clcok cycle. The \textit{Adder Core} unit performs a single step of the addition computation, which is adding
-2 bits together of an input number then adding a carry bit if necessary. The \textit{Adder Core} then outputs the result of the addition and the carry bit if there is one to be used in the next operation,
-saved by the addition controller.
+The Adder controller is the first of the sub-controllers developed and is responsible for performing the addition operation. It is composed of the 2 main parts:
+\begin{itemize}
+    \item \textbf{Adder Core}: The core unit that performs the addition operation. It is a simple combinational circuit that takes in two bits and produces a sum and a carry bit.
+    \item \textbf{Adder Controller}: The controller that manages the flow of the addition operation. It is a sequential circuit that directs the \textit{Adder Core} to perform the
+        addition of the inputs over multiple clock cycles.
+\end{itemize}
 
+\subsection{Adder Core}
+The \textit{adder core} is the combinational circuit refactored from the previous report. It performs its functions on a bit-by-bit basis, where each bit is added together and the carry is
+added and passed to the next bit. The difference between the previous implementation and the current implementation is that the logic of the bit-by-bit process is now separated from the
+combinational logic it was in before. This allows for it to be used either in a combinational or sequential manner, depending on the needs of the design.
 
-\subsubsection{Adder Controller States}
-\subsubsection{Adder Instantiations}
-\subsubsection{Adder FSM}
+The \textit{adder core} remains the same, as it is composed of two half adders, one for each input and one for the carry bits, and an OR gate to determine the final carry. The
+\textit{adder core} is shown below:
+
+\begin{lstlisting}[language=Verilog]
+module Addition_Core #( parameter WIDTH = 4 ) (
+    input wire in1,
+    input wire in2,
+    input wire carry_in,
+    output wire out,
+    output wire carry_out
+);
+    // Internal wires
+    wire temp_out, temp_carry_out, carry_overflow;
+
+    // Add the inputs and store the output
+    Half_Adder input_adder_instance (
+        .in1( in1 ),
+        .in2( in2 ),
+        .out( temp_out ),
+        .carry_out( temp_carry_out )
+    );
+
+    // Add the carry
+    Half_Adder carry_adder_instance (
+        .in1( temp_out ),
+        .in2( carry_in ),
+        .out( out ),
+        .carry_out( carry_overflow )
+    );
+
+    // Determine the final carry
+    OR or_instance (
+        .in1( temp_carry_out ),
+        .in2( carry_overflow ),
+        .out( carry_out )
+    );
+endmodule
+\end{lstlisting}
+
+\subsection{Adder Controller FSM}
+From the \textit{adder core}, the \textit{adder controller} is built. It uses an FSM to manage the different states the addition operation can be in and uses the \textit{adder core} to perform each
+step of the addition of two inputs. The addition FSM first moves into the \texttt{INIT} state, where the input registers are initialized. It then moves into a switching between \texttt{STEP} and
+\texttt{LOAD} states, where the addition is performed and then is saved to the output registers and for the next carry bit. The FSM is shown below:
+\begin{lstlisting}[language=Verilog]
+    case( state )
+        INIT: begin // Initialize the addition operation
+            done <= 1'b0;
+            if( start ) begin
+                step_counter <= 0;
+                current_in1 <= in1[ 0 ];
+                current_in2 <= in2[ 0 ];
+                carry_in <= 1'b0;
+                state <= LOAD;
+            end
+        end
+        STEP: begin // Perform the addition operation
+            if( step_counter < WIDTH ) begin
+                current_in1 <= in1[ step_counter ];
+                current_in2 <= in2[ step_counter ];
+                carry_in <= carry_out;
+                state <= LOAD;
+            end else begin
+                out <= final_out;
+                final_carry <= carry_out;
+                state <= DONE;
+            end
+        end
+        LOAD: begin // Load the output registers
+            final_out[ step_counter ] <= current_out;
+            state <= STEP;
+            step_counter <= step_counter + 1;
+
+        end
+        DONE: begin // Finish the addition operation
+            done <= 1'b1;
+            state <= INIT;
+        end
+    endcase
+\end{lstlisting}
+
+There is an additional step that is taken before entering the main case logic in the FSM which simply initializes all the temporary wires and output registers. This is done any time the FSM enters the
+the \textit{posedge reset} block. This is to ensure that the output registers are properly initialized before the operation begins.
 
 \subsection{Subtractor Controller}
 \subsubsection{Subtractor Controller States}
