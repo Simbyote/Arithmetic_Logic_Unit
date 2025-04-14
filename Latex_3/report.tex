@@ -176,7 +176,7 @@ every potential input combination possible for the ALU. More specifically, it in
 \subsection{Testbench Design}
 The tests also needed to include some method of tracking the clock and reset signals so that the ALU could be properly initialized and run for each change in input. In order to properly capture the correct 
 change in output for each change in input, posedge detections were added into the generic tests. These posedges are used to tell the controller to update its state and output registers. However, applying a
-posedge requires a careful consideration for where they are placed in the generic tests to avoid saturating the system with too many posedges and thatv it updates its outputs accordingly. The general rules
+posedge requires a careful consideration for where they are placed in the generic tests to avoid saturating the system with too many posedges and that it updates its outputs accordingly. The general rules
 to follow when adding posedges are:
 \begin{itemize}
     \item \textbf{Posedge Between Input Change}: This is to ensure that the controller updates its state and output registers before the next input change.
@@ -440,36 +440,46 @@ parts that are responsible for the different steps of the operations and all rem
 The done signal is asserted by sub-controllers to indicate completion of their operation. The ALU controller monitors these flags to determine when to latch the outputs and re-enter the IDLE state.
 This handshake ensures synchronization between sequential and combinational logic blocks.
 
-\begin{tikzpicture}[->, node distance=2.5cm, every state/.style={thick, minimum size=1.2cm}]
-    \node[state] (A) {INIT};
-    \node[state] (B) [right of=A] {STEP};
-    \node[state] (C) [right of=B] {LOAD};
-    \node[state] (D) [below of=B] {DONE};
+Below are two state diagrams describing how their respective controllers flow during runtime:
 
-    \path
-        (A) edge node[above] {start} (B)
-        (B) edge[loop above] node {repeat} (B)
-        (B) edge[bend left] node {} (C)
-        (C) edge[bend left] node {} (B)
-        (B) edge node {} (D)
-        (D) edge[bend left] node[below] {done} (A);
-\end{tikzpicture}
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[->, node distance=2.5cm, every state/.style={thick, minimum size=1.2cm}]
+        \node[state] (A) {INIT};
+        \node[state] (B) [right of=A] {STEP};
+        \node[state] (C) [right of=B] {LOAD};
+        \node[state] (D) [below of=B] {DONE};
 
-\begin{tikzpicture}[->, node distance=2.5cm, every state/.style={thick, minimum size=1.2cm}]
-    \node[state] (A) {IDLE};
-    \node[state] (B) [right of=A] {INIT};
-    \node[state] (C) [right of=B] {STEP};
-    \node[state] (D) [right of=C] {DONE};
+        \path
+            (A) edge node[above] {start} (B)
+            (B) edge[loop above] node {repeat} (B)
+            (B) edge[bend left] node[above] {load} (C)
+            (C) edge[bend left] node[below] {step} (B)
+            (B) edge node {} (D)
+            (D) edge[bend left] node[below] {done} (A);
+    \end{tikzpicture}
+    \caption{State diagram of the Addition and Subtraction Controllers}
+    \label{fig:add_sub}
+\end{figure}
 
-    \path
-        (A) edge node[above] {start} (B)
-        (B) edge node[above] {init} (C)
-        (C) edge node[above] {step} (D)
-        (C) edge[loop above] node {repeat} (C)
-        (D) edge[bend left] node[below] {done} (A);
-\end{tikzpicture}
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[->, node distance=2.5cm, every state/.style={thick, minimum size=1.2cm}]
+        \node[state] (A) {IDLE};
+        \node[state] (B) [right of=A] {INIT};
+        \node[state] (C) [right of=B] {STEP};
+        \node[state] (D) [right of=C] {DONE};
 
-
+        \path
+            (A) edge node[above] {start} (B)
+            (B) edge node[above] {init} (C)
+            (C) edge node[above] {step} (D)
+            (C) edge[loop above] node {repeat} (C)
+            (D) edge[bend left] node[below] {done} (A);
+    \end{tikzpicture}
+    \caption{State diagram of the Multiplication and Division Controllers}
+    \label{fig:div_mult}
+\end{figure}
 
 While most of the states are similar across the different sub-controllers, the \textit{INIT} and \textit{LOAD} states are featured in their own unique manner. The \textit{INIT} state is used to
 initialize the input registers in the \textit{addition} and \textit{subtraction} operations while the \textit{LOAD} state is used to load registers in the \textit{multiplication} and \textit{division} 
@@ -477,7 +487,7 @@ operations. This is due to the designs of each respective operation and will be 
 to move through each state as the operation is performed.
 
 Furthermore, every operation receives a section before the FSM case logic is entered that initializes any internal wires and output registers used in the operation. This helps each input to be independant
-from one another and avoid any mismatches in the timing of the inputs.
+from one another and avoid any mismatches in the timing of the inputs. This is denoted in the source files as a check against \texttt{RESET} during runtime.
 
 \subsection{Adder Controller}
 The Adder controller is the first of the sub-controllers developed and is responsible for performing the addition operation. It is composed of the 2 main parts:
@@ -573,22 +583,193 @@ step of the addition of two inputs. The addition FSM first moves into the \textt
 \end{lstlisting}
 
 There is an additional step that is taken before entering the main case logic in the FSM which simply initializes all the temporary wires and output registers. This is done any time the FSM enters the
-the \textit{posedge reset} block. This is to ensure that the output registers are properly initialized before the operation begins.
+the \textit{posedge reset} block. This is to ensure that the output registers are properly initialized before every new operation begins.
 
 \subsection{Subtractor Controller}
-\subsubsection{Subtractor Controller States}
-\subsubsection{Subtractor Instantiations}
-\subsubsection{Subtractor FSM}
+The subtractor controller is the second of the sub-controllers developed and is responsible for performing the subtraction operation. It is composed similarly to the adder controller, with the following
+parts:
+\begin{itemize}
+    \item \textbf{Subtractor Core}: The core unit that performs the subtraction operation. It is a simple combinational circuit that takes in two bits and produces a difference and a borrow bit.
+    \item \textbf{Subtractor Controller}: The controller that manages the flow of the subtraction operation. It is a sequential circuit that directs the \textit{Subtractor Core} to perform the
+        subtraction of the inputs over multiple clock cycles.
+\end{itemize}
+
+\subsubsection{Subtractor Core}
+Like the adder controller, the subtractor controller features a \textit{core} unit that performs its operations in a bit-by-bit manner, with carry bits being passed into and from the core unit. The subtractor
+core is similar to the adder core, with the differences being the composition of the logic. The subtractor core is shown below:
+\begin{lstlisting}[language=Verilog]
+    module Subtraction_Core #( parameter WIDTH = 4 ) (
+        input wire in1,
+        input wire in2,
+        input wire borrow_in,
+        output wire out,
+        output wire borrow_out
+    );
+        // Internal wires
+        wire temp_out, temp_borrow_out, borrow_overflow;
+
+        // Subtract the inputs and store the output
+        Half_Subtractor input_subtractor_instance (
+            .in1( in1 ),
+            .in2( in2 ),
+            .out( temp_out ),
+            .borrow_out( temp_borrow_out )
+        );
+
+        // Subtract the borrow
+        Half_Subtractor borrow_subtractor_instance (
+            .in1( temp_out ),
+            .in2( borrow_in ),
+            .out( out ),
+            .borrow_out( borrow_overflow )
+        );
+
+        // Determine the final borrow
+        OR or_instance (
+            .in1( temp_borrow_out ),
+            .in2( borrow_overflow ),
+            .out( borrow_out )
+        );
+    endmodule
+\end{lstlisting}
+
+As opposed to the \textit{adder core}, the \textit{subtractor core} uses a \textit{half subtractors} instead of \textit{half adders}. The half subtractor is a combinational circuit that takes in two bits and produces a 
+difference and a borrow bit. The half subtractor is similar to the half adder, with the only difference being the logic used to produce the output. The \textit{subtractor core} uses an OR gate to determine the borrow
+bits and any borrow overflow that may occur. 
+
+\subsubsection{Subtractor Controller FSM}
+The FSM used for the subtractor controller is identical to the one used for the adder controller. This stark similarity is due to the relationship between the two operations, as they are both feature a similar structure
+in their core units. Furthermore, the choice to use two distinct controllers for the two operations was made to maintain the modularity of the design and ensure that the operations could be performed independently of one
+another. Both operations could be implemented together in a unified controller, but there would be a loss of modularity and clarity in the design, since the operations would be conjoined into a single controller. Thus, to
+avoid this issue, two controllers for the the operations were made and kept separate.
 
 \subsection{Multiplier Controller}
-\subsubsection{Multiplier Controller States}
-\subsubsection{Multiplier Instantiations}
-\subsubsection{Multiplier FSM}
+The multiplier controller is the third of the sub-controllers developed and is responsible for performing the multiplication operation. The conception of the multiplier controller was a bit different than the previous two
+controllers due to the nature of the multiplication operation. Instead of working bit-by-bit, the controller would work on shifting the inputs, aligning them accordingly based on the multiplication algorithm developed.
+
+\subsubsection{Multiplier Core}
+The \textit{multiplier core} is the heart of the multiplication operation. It performs its operations on an entire input rather than in single bits. Furthermore, the \textit{multiplier core} features the use of Full Adders,
+a shifter, and a comparator to perform and complete each step of the multiplication process. The \textit{multiplier core} is shown below:
+\begin{lstlisting}[language=Verilog]
+    module Multiplier_Core #( parameter WIDTH = 4 ) (
+        input wire [ WIDTH-1:0 ] in1,
+        input wire [ WIDTH-1:0 ] in2,
+        input wire [ WIDTH-1:0 ] partial_high,
+        input wire [ WIDTH-1:0 ] partial_low,
+        input wire [ WIDTH-2:0 ] step_counter,
+        output wire [ WIDTH-1:0 ] out_high,
+        output wire [ WIDTH-1:0 ] out_low,
+        output wire is_equal
+    );
+        // Internal wires
+        wire [ WIDTH-1:0 ] shift, shift_result, shift_overflow, combined_overflow;
+        wire final_carry;
+        assign shift = { step_counter, 1'b0 };  // Construct the shift signal
+
+        // Shift the multiplicand according to the step
+        nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) shift_instance (
+            .in( in1 ),
+            .shift( shift ),
+            .out( shift_result ),
+            .overflow( shift_overflow )
+        );
+
+        // Add the shifted multiplicand to the low side of the partial sum
+        Full_Adder #( .WIDTH( WIDTH ) ) adder_low_instance (
+            .in1( partial_low ),
+            .in2( shift_result ),
+            .out( out_low ),
+            .final_carry( final_carry )
+        );
+
+        // Add the overflow from the shift to the high side of the partial sum
+        Full_Adder #( .WIDTH( WIDTH ) ) adder_overflow_instance (
+            .in1( partial_high ),
+            .in2( shift_overflow ),
+            .out( combined_overflow ),
+            .final_carry(  )
+        );
+
+        // Add the overflow from the two addition operations to the high side of the partial sum
+        Full_Adder #( .WIDTH( WIDTH ) ) adder_final_instance (
+            .in1( combined_overflow ),
+            .in2( { { ( WIDTH-1 ){ 1'b0 } }, final_carry } ),
+            .out( out_high ),
+            .final_carry(  )    // Final carry is not used
+        );
+
+        // Determine if the current bit being calculated is is equal to 1
+        Equal_To #( .WIDTH( 1'b1 ) ) equal_instance (
+            .in1( in2[ step_counter ] ),
+            .in2( 1'b1 ),
+            .out( is_equal )
+        );
+    endmodule
+\end{lstlisting}
+
+The \textit{multiplier core} determines a shift based on the current step of the multiplication. This is composed during the initial stages of the multiplication step that is then used by the shifter. It then
+undergoes a series \textit{Full Adders} to add the shifted multiplicand to the low side of the partial sum and any overflow from the shift is added to the high side of the partial sum. This process is then repeated
+for every step of the multiplication, which is determined by the number of bits in the inputs. The \textit{multiplier core} also features a comparator to determine if the current bit being calculated is equal to 1. 
+This is used by the \textit{multiplier controller} to determine if the current step should be performed or not. The design of the \textit{multiplier core} is similar to those of the \textit{adder core} and \textit{subtractor core},
+but that work on a whole input rather than a single bit for one clock cycle. This does not capture the true nature of how a clock signal may pass through the hardware. If the design were to be implemented in hardware, the
+\textit{multiplier core} would perform each step if the \textit{Full Adders} across multiple clock cycles while the shifting would remain mostly the same. However, the implementation of a feature like this one would need
+to allow for the clock cycles between the \textit{multiplier controller} and the \textit{addition controllers} to be in sync with one another, which is more difficult to align. Hence, for simplicity and modularity, the 
+\textit{multiplier core} was designed to work in a single clock cycle rather than across multiple clock cycles.
+
+\subsubsection{Multiplier Controller FSM}
+The FSM for the multiplier controller is slightly different than the previous two controllers developed ad it features an \texttt{IDLE} step and removes the \texttt{LOAD} step. The \texttt{IDLE} step is used to
+initialize the output registers without affecting the remaining registers. This is because how the \textit{multiplier core} tracks its partial sums and output registers. In essence, the \textit{multiplier core} builds
+the output registers as it goes, rather than having to load them in between steps. Hence, the \texttt{LOAD} step is removed as well. The FSM for the multiplier controller is shown below:
+\begin{lstlisting}[language=Verilog]
+    case( state )
+        IDLE: begin // Initialize the multiplication operation
+            done <= 1'b0;
+            if( start ) begin
+                current_out_high <= { WIDTH{ 1'b0 } };
+                current_out_low <= { WIDTH{ 1'b0 } };
+                state <= INIT;
+            end
+        end
+        INIT: begin // Perform first multiplication step
+            if( is_equal ) begin
+                current_out_high <= { WIDTH{ 1'b0 } };
+                current_out_low <= in1;
+                state <= STEP;
+            end else begin
+                current_out_high <= { WIDTH{ 1'b0 } };
+                current_out_low <= { WIDTH{ 1'b0 } };
+                state <= STEP;
+            end
+            step_counter <= 1;
+        end
+        STEP: begin // Remaining multiplication steps
+            if( step_counter < WIDTH ) begin
+                if( is_equal ) begin
+                    current_out_high <= mul_high;
+                    current_out_low <= mul_low;
+                end
+
+                step_counter <= step_counter + 1;
+            end else begin
+                out_high <= current_out_high;
+                out_low <= current_out_low;
+                state <= DONE;
+            end
+        end
+        DONE: begin
+            done <= 1'b1;
+            state <= IDLE;
+        end
+    endcase
+\end{lstlisting}
+
+The FSM for the multiplier controller utilizes its \texttt{INIT} state slightly differently than the other controllers. The \texttt{INIT} state is used to perform the first multiplication step, where the inputs are
+initialized and then determined based on the assertion of the least significant bit of the second input. Since the \texttt{STEP} uses a \textit{partial sum} to add to and from, the \texttt{INIT} state is needed to
+initialize that partial sum before the first step and after can be performed. The \texttt{STEP} state is used to perform the remaining multiplication steps, where the inputs are added to the partial sum and the 
+output registers are updated. Once all steps are completed, the \texttt{DONE} state is entered, where the output registers are updated and the FSM is reset to the \texttt{IDLE} state. From here, the \textit{multiplier controller}
+takes back control and the ALU controller can proceed to the next operation.
 
 \subsection{Divider Controller}
-\subsubsection{Divider Controller States}
-\subsubsection{Divider Instantiations}
-\subsubsection{Divider FSM}
 
 \section{Waveform Analysis}
 
