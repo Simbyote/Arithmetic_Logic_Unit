@@ -187,7 +187,7 @@ to follow when adding posedges are:
 \subsection{Testbench Implementation}
 The testbench was implemented in a separate file, \textit{testbench\_sequential.v}. This file tested two both the ALU controller and the sub-controllers.
 
-\subsubsection{Sub-Controller Testing}
+\subsubsection*{Sub-Controller Testing}
 Testing was first done on the sub-controllers, as they
 relied on their \textit{core} units. Developing these controllers first allowed for a more modular design to be implemented across the different sub-controllers, as we would be testing for similar functionality
 across the different modules. The testbench developed for the sub-controllers is shown below:
@@ -229,7 +229,7 @@ Each timing input is carefully placed to ensure that the system is able to recor
 lead to a loss of information, where old data is saved or data that does not exist yet is used. This is why the timing of the inputs is so important in the design of
 the controller. 
 
-\subsubsection{Clock Signal Implementation}
+\subsubsection*{Clock Signal Implementation}
 Notice that the clock signal is not included in the macro directly; there is no CLK that is incremented in the macro. Rather, the clock is initialzied outside of the macro, 
 in the testbench. There are a few standard methods for which to increment a clock depending on the application. For the purpose of this testbench, a simple implementation
 was used to increment the clock:
@@ -244,7 +244,7 @@ was used to increment the clock:
 This implementation increments the clock signal every 5 time units, which is set to 1ns for the purpose of this testbench. This means that the clock signal will toggle every 5ns
 forever, until the simulation is stopped. This is a simple implementation of a clock signal that is used to synchronize the operations of the ALU.
 
-\subsubsection{ALU Controller Testing}
+\subsubsection*{ALU Controller Testing}
 Testing for the ALU controller was done in a similar fashion to the sub-controllers, with the only difference being an extra input to the macro: the opcode. The opcode is placed
 at the beginning of the macro, as it is the first input to be changed. The opcode is then incremented in a loop after the remaining test is concluded. For every opcode, the generic
 test listed above is conducted.
@@ -307,7 +307,7 @@ and passed into the macro. One example of this is shown below, where the \textit
 
 Every module tested is instantiated the same way, with differences being the naming of input variables and module names. 
 
-\subsubsection{Latch Implementation}
+\subsubsection*{Latch Implementation}
 It is important to note the use of a \textit{latch} for the output signals. The outputs from each module vary or oscillate with the periodic clock due to the internal combinational 
 circuitry, which can produce intermediate values between clock edges. To avoid an oscillating output, the output signal can be latched using a flip-flop register. The latching is 
 done using a simple always block that captures the output of the module when the \texttt{DONE} signal is asserted. This ensures a stable output value is captured until the next 
@@ -323,7 +323,7 @@ was designed to act as a purely combinational block to mitigate timing mismatche
 the ALU instantiates the sub-controllers before entering its FSM. Because of this, every operation in the ALU is computed per input. However, once the FSM is entered, only the specified 
 operation is transferred and outputted by the ALU controller module.
 
-\subsubsection{ALU Controller States}
+\subsubsection*{ALU Controller States}
 The ALU controller is designed to handle the following operations with the assigned opcodes:
 \begin{figure}[H]
     \centering
@@ -354,7 +354,7 @@ right, filling the empty bits with zeros. This is useful for unsigned numbers, w
 the bits of a signed number to the left or right, filling the empty bits with the sign bit. This is useful for signed numbers, where the sign of the number matters. Both of these shifts carry
 their own control signals within them and are used to determine the direction of the shift, the amount of bits to shift, and the fill bit to use. 
 
-\subsubsection{Sub-Controller Instantiations}
+\subsubsection*{Sub-Controller Instantiations}
 The ALU controller instantiates the sub-controllers for each operation to be performed. This is a feature of the ALU controller that allows for the modularity of the design to be maintained
 more easily. This also allows for the ALU to pass down the responsibility of the operations to the sub-controllers, rather than having all the logic in the ALU controller. However, this does
 impact the performance of the ALU, as the ALU controller must wait for the sub-controllers to complete their operations before it can proceed, even when the operation is not needed.
@@ -381,7 +381,7 @@ Most of the sub-controllers are instantiated in a similar fashion, with the diff
 as the ALU controller becomes a simple wrapper around the sub-controllers. This allows for the ALU controller to be easily modified or extended in the future, as new operations can be added by simply
 adding a new sub-controller and updating the ALU controller to include the new operation. This is a key feature of the hierarchical design approach taken in this project.
 
-\subsubsection{ALU Finite State Machine}
+\subsubsection*{ALU Finite State Machine}
 The finite state machine for the ALU controller is designed to be purely combinational. It selects and coordinates which of the sub-controllers outputs to use based on the opcode. The FSM for
 the ALU was originally designed to be sequential, but due to timing mismatches between the ALU controller and the sub-controllers, it was changed to be purely combinational. This change
 allows for easier debugging and readability at the cost of performance. Sequential logic is typically easier to debug and understand than combinational logic, since the flow of the data using
@@ -594,7 +594,7 @@ parts:
         subtraction of the inputs over multiple clock cycles.
 \end{itemize}
 
-\subsubsection{Subtractor Core}
+\subsubsection*{Subtractor Core}
 Like the adder controller, the subtractor controller features a \textit{core} unit that performs its operations in a bit-by-bit manner, with carry bits being passed into and from the core unit. The subtractor
 core is similar to the adder core, with the differences being the composition of the logic. The subtractor core is shown below:
 \begin{lstlisting}[language=Verilog]
@@ -637,7 +637,7 @@ As opposed to the \textit{adder core}, the \textit{subtractor core} uses a \text
 difference and a borrow bit. The half subtractor is similar to the half adder, with the only difference being the logic used to produce the output. The \textit{subtractor core} uses an OR gate to determine the borrow
 bits and any borrow overflow that may occur. 
 
-\subsubsection{Subtractor Controller FSM}
+\subsubsection*{Subtractor Controller FSM}
 The FSM used for the subtractor controller is identical to the one used for the adder controller. This stark similarity is due to the relationship between the two operations, as they are both feature a similar structure
 in their core units. Furthermore, the choice to use two distinct controllers for the two operations was made to maintain the modularity of the design and ensure that the operations could be performed independently of one
 another. Both operations could be implemented together in a unified controller, but there would be a loss of modularity and clarity in the design, since the operations would be conjoined into a single controller. Thus, to
@@ -647,7 +647,7 @@ avoid this issue, two controllers for the the operations were made and kept sepa
 The multiplier controller is the third of the sub-controllers developed and is responsible for performing the multiplication operation. The conception of the multiplier controller was a bit different than the previous two
 controllers due to the nature of the multiplication operation. Instead of working bit-by-bit, the controller would work on shifting the inputs, aligning them accordingly based on the multiplication algorithm developed.
 
-\subsubsection{Multiplier Core}
+\subsubsection*{Multiplier Core}
 The \textit{multiplier core} is the heart of the multiplication operation. It performs its operations on an entire input rather than in single bits. Furthermore, the \textit{multiplier core} features the use of Full Adders,
 a shifter, and a comparator to perform and complete each step of the multiplication process. The \textit{multiplier core} is shown below:
 \begin{lstlisting}[language=Verilog]
@@ -716,7 +716,7 @@ but that work on a whole input rather than a single bit for one clock cycle. Thi
 to allow for the clock cycles between the \textit{multiplier controller} and the \textit{addition controllers} to be in sync with one another, which is more difficult to align. Hence, for simplicity and modularity, the 
 \textit{multiplier core} was designed to work in a single clock cycle rather than across multiple clock cycles.
 
-\subsubsection{Multiplier Controller FSM}
+\subsubsection*{Multiplier Controller FSM}
 The FSM for the multiplier controller is slightly different than the previous two controllers developed ad it features an \texttt{IDLE} step and removes the \texttt{LOAD} step. The \texttt{IDLE} step is used to
 initialize the output registers without affecting the remaining registers. This is because how the \textit{multiplier core} tracks its partial sums and output registers. In essence, the \textit{multiplier core} builds
 the output registers as it goes, rather than having to load them in between steps. Hence, the \texttt{LOAD} step is removed as well. The FSM for the multiplier controller is shown below:
@@ -770,10 +770,158 @@ output registers are updated. Once all steps are completed, the \texttt{DONE} st
 takes back control and the ALU controller can proceed to the next operation.
 
 \subsection{Divider Controller}
+The divider controller is the fourth of the sub-controllers developed and is responsible for performing the division operation. The design and implementation of the division was the most complex of the four operations, as it
+required multiple intermediary steps to be performed before each step could be done. To avoid conflating the main module of the division with too many operations, it was integral to separate the division into 3 parts:
+\begin{itemize}
+    \item \textbf{Signal Decomposition}: The first intermediary step performed in the division logic that is used to decompose an input signal into its most significant components.
+    \item \textbf{Signal Alignment}: The second intermediary step performed in the division logic that is used to align an input to another input based on the MSB of its second input.
+    \item \textbf{Divider Core}: The main method of the divider which performs subtraction operation and assigns the output registers.
+\end{itemize}
+
+\subsubsection*{Divider Core}
+Most of the changes made to the division operation from the previous report is the addition of the \textit{divider core} module. It is a refactored version of previous combinational logic that has been isolated into its own module.
+This is in order to promote a modular design and allow for the division module to be used across multiple logic blocks. Similar to how the \textit{multiplier core} was designed, the \textit{divider core} performs its operations on a
+whole input rather than a single bit for one clock cycle.
+
+The \textit{divider core} uses both the \textit{signal decomposition} and \textit{signal alignment} as well as a \textit{Full Subtractor} and a few \textit{comparators} to perform and complete each step of the dicision process.
+The \textit{divider core} is shown below:
+\begin{lstlisting}[language=Verilog]
+    module Divider_Core #( parameter WIDTH = 4 ) (
+        input wire [ WIDTH-1:0 ] in1,
+        input wire [ WIDTH-1:0 ] in2,
+        output wire [ WIDTH-1:0 ] out,
+        output wire [ WIDTH-1:0 ] remainder,
+        output wire is_zero,
+        output wire is_less,
+        output wire has_borrow
+    );
+        // Internal wires
+        wire [ WIDTH-1:0 ] alignment_result;
+        wire [ WIDTH-2:0 ] pos;
+        wire final_borrow;
+
+        // Align the dividend and divisor
+        Signal_Alignment #( .WIDTH( WIDTH ) ) alignment_instance (
+            .in1( in1 ),
+            .in2( in2 ),
+            .out( alignment_result ),
+            .out_pos( pos )
+        );
+
+        // Subtract the aligned divisor from the dividend
+        Full_Subtractor #( .WIDTH( WIDTH ) ) initial_subtractor_instance (
+            .in1( in1 ),
+            .in2( alignment_result ),
+            .out( remainder ),
+            .final_borrow( final_borrow )
+        );
+
+        // Assign the quotient based on the current position being worked on
+        nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) shift_quotient_instance (
+            .in( { {(WIDTH-1){1'b0}}, 1'b1 } ),
+            .shift( { pos, 1'b0 } ),
+            .out( out ),
+            .overflow(  )   // Overflow is not used
+        );
+
+        // Check if the divisor is zero
+        Equal_To #( .WIDTH( WIDTH ) ) equal_instance (
+            .in1( in2 ),
+            .in2( { WIDTH{ 1'b0 } } ),
+            .out( is_zero )
+        );
+
+        // Check if in1 < in2
+        Less_Than #( .WIDTH( WIDTH ) ) less_than_instance (
+            .in1( in1 ),
+            .in2( in2 ),
+            .out( is_less )
+        );
+
+        // Check if there is a final borrow
+        Equal_To #( .WIDTH( 1 ) ) final_borrow_instance (
+            .in1( final_borrow ),
+            .in2( 1'b0 ),
+            .out( has_borrow )
+        );
+    endmodule
+\end{lstlisting}
+
+The \textit{divider core} functions by first extracting the most significant bits using the \textit{signal decomposition} and then aligning the inputs based on the position of that MSB in the \textit{signal alignment} step. From
+there, the aligned divisor is subtracted from the dividend using a \textit{Full Subtractor}, where a quotient is then placed based on the position determined by the \textit{signal decomposition} step using a \textit{nBit Shifter}.
+Upon completing its operation, the \textit{divider core} issues a few \textit{comparators} checks to determine some key features of the inputs being calculated. The \textit{comparators} are used by the \textit{divider controller} 
+to set rules for the division operation and determine if the operation is valid or not. The \textit{comparators} used in the \textit{divider core} are:
+\begin{itemize}
+    \item \textbf{First Equal To Comparator}: The first comparator featured in the final checks of the \textit{divider core} is used to determine if a divisor is zero. This is used by the \textit{divider controller} to determine if
+        the division operation performed is valid or not. If the divisor is zero, the division operation fails and the output registers are not updated.
+    \item \textbf{Less Than Comparator}: The second comparator featured is used to determine if the dividend is less than the divider. This is used by the \textit{divider controller} to determine if the division operation is valid or not.
+        As opposed to the zero check, if this comparator fails, then the divisor does not fit into the dividend and a remainder can be set.
+    \item \textbf{Second Equal To Comparator}: The third comparator featured is used to determine if there is a final borrow from the subtraction operation. This is used by the \textit{divider controller} to determine if another step is needed.
+        So long as this comparator is true, the division operation will continue in a loop.
+\end{itemize}
+
+\subsubsection*{Divider Controller FSM}
+The FSM for the divider controller is identical to the one used for the multiplier controller, with only a slight difference in the \texttt{INIT} state. In the \texttt{INIT} state, the \textit{divider core} needs to have its quotient
+and remainder initialized based on the current inputs. Although this step is not strictly necessary the first time the division process works, it helps to ensure that the remaining steps are performed and initialized correctly based on
+a step counter passed down from the \textit{divider controller} to the \textit{divider core}.
+
+Once the division operation is finished, a \texttt{DONE} state is entered, where the output registers are updated and the FSM is reset to the \texttt{IDLE} state. From here, the \textit{divider controller} takes back control and the ALU 
+controller can proceed to the next operation.
 
 \section{Waveform Analysis}
 
+
+\subsection{Addition Waveform}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/addition_waveform.png}
+    \caption{Addition waveform from the ALU}
+    \label{fig:add_wave}
+\end{figure}
+
+\subsubsection*{Addition Timing Diagram}
+
+\subsection{Subtraction Waveform}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/subtraction_waveform.png}
+    \caption{Subtraction waveform from the ALU}
+    \label{fig:sub_wave}
+\end{figure}
+
+\subsubsection*{Subtraction Timing Diagram}
+
+\subsection{Multiplication Waveform}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/multiplication_waveform.png}
+    \caption{Multiplication waveform from the ALU}
+    \label{fig:mul_wave}
+\end{figure}
+
+\subsubsection*{Multiplication Timing Diagram}
+
+\subsection{Division Waveform}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/division_waveform.png}
+    \caption{Division waveform from the ALU}
+    \label{fig:div_wave}
+\end{figure}
+
+\subsubsection*{Division Timing Diagram}
+
 \section{Challenges and Solutions}
+\subsection{Clock Signal Implementation}
+\subsection{Addition Timing Mismatch}
+\subsection{Refactoring Division Operation}
+
+\section{Potential Improvements}
+\subsection{Adding Negative Number Support}
+\subsection{Adding Floating Point Support}
+\subsection{Refactoring Multiplier and Divider Controllers}
+\subsubsection*{Implementations Closer to Real Hardware}
+\subsection{Adding Additional Operations}
 
 \section{Conclusion}
 

@@ -135,10 +135,12 @@ module testbench_alu_control;
 
     // Latch the output signals for clearer waveform
     reg [WIDTH-1:0] p_high_latched, p_low_latched;
+    reg flag_latched;
     always @(posedge clk) begin
         if( alu_done ) begin
             p_high_latched <= alu_high;
             p_low_latched <= alu_low;
+            flag_latched <= alu_flag;
         end
     end
 

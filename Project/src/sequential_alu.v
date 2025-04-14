@@ -286,6 +286,7 @@ endmodule
  * - The Addition_Control module is a sequential controller that controls the addition operation.
  * - The module uses the Addition_Core module to perform the addition operation.
  * - The module uses a FSM to control the addition operation.
+ * - It performs its operations bit-by-bit
  */
 module Addition_Control #( parameter WIDTH = 4 ) (
     input wire clk,
@@ -384,6 +385,7 @@ endmodule
  * - The Subtraction_Control module is a sequential controller that controls the subtraction operation.
  * - The module uses the Subtraction_Core module to perform the subtraction operation.
  * - The module uses a FSM to control the subtraction operation.
+ * - It performs its operations bit-by-bit
  */
 module Subtraction_Control #( parameter WIDTH = 4 ) (
     input wire clk,
@@ -482,6 +484,7 @@ endmodule
  * - The Multiplier_Control module is a sequential controller that controls the multiplication operation.
  * - The module uses the Multiplier_Core module to perform the multiplication operation.
  * - The module uses a FSM to control the multiplication operation.
+ * - It performs its operations on inputs per clock cycle.
  */
 module Multiplier_Control #( parameter WIDTH = 4 ) (
     input wire clk,
@@ -586,6 +589,7 @@ endmodule
  * - The Divider_Control module is a sequential controller that controls the division operation.
  * - The module uses the Divider_Core module to perform the division operation.
  * - The module uses a FSM to control the division operation.
+ * - It performs its operations on inputs per clock cycle.
  */
 module Divider_Control #( parameter WIDTH = 4 ) (
     input wire clk,
