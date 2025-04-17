@@ -250,6 +250,26 @@ at the beginning of the macro, as it is the first input to be changed. The opcod
 test listed above is conducted.
 
 \subsection{Testbench Timing Diagrams}
+\subsubsection*{Input Timing}
+The testing algorithm shown in section \textbf{Sub-Controller Testing} iterates the two main register that control the inputs of each operation. They can be described and shown in the
+figure below:
+\begin{figure}[H]
+    \centering
+    \begin{tikztimingtable}[timing/slope=0, xscale=1.2]
+        IN4 & 7L 8H 1L \\
+        IN3 & 3L 4H 4L 4H 1L\\
+        IN2 & 1L 3{2H2L} 2H 1L \\
+        IN1 & 8{HL} \\
+    \end{tikztimingtable}
+    \caption{Timing diagram of one complete input cycle}
+    \label{fig:REG2_time}
+\end{figure}
+
+Diagram \ref{fig:REG2_time} shows how \texttt{REG2} is affected by \texttt{REG1}. The generic tests follow a pattern while iterating that allow for every possible combination of inputs to be passed
+into the modules being tested; in this case, the ALU controller and its sub-controllers. For \texttt{REG1}, it starts at a value of 0 and increments by one after completing a full cycle
+of \texttt{REG2}, so that means that every change in input from \texttt{REG1} has an equivalent pattern shown in the timing diagram \ref{fig:REG2_time}.
+
+\subsubsection*{Control Signal Timing}
 At the lowest level of the testbench, the clock, reset, and start signals make up a single input change. This change is represented by the timing diagram shown below.
 \begin{figure}[H]
     \centering
@@ -260,17 +280,20 @@ At the lowest level of the testbench, the clock, reset, and start signals make u
     DONE & 18L 2H 4L \\
     \end{tikztimingtable}
     \caption{Timing diagram showing one ALU controller activation cycle with a reset phase, input start pulse, and synchronization to the system clock.}
+    \label{fig:ctrl_time}
 \end{figure}
 
-The diagram illustrates the signal timing associated with a single change in input. The \texttt{CLK} signal remains periodic with a constant cycle length. This is the
-result of the code mentioned in the \textit{Clock Signal Implementation} section. The \texttt{RST} (reset) signal is asserted at the beginning to initialize the system and then
-deasserted after the first rising edge. It remains low for most of the operation and is reasserted at the end to reset the state for the next operation. The \texttt{START} signal 
-is asserted for two clock cycles after reset is deasserted, signaling the controller to begin executing the operation based on current inputs. The \texttt{DONE} signal is asserted 
-for two clock cycles once the operation is complete, indicating the result is available and the controller is ready for the next input.
+Diagram \ref{fig:ctrl_time} illustrates the timing of the control signals that accompany every individual change in the input. Importantly, although Figure \ref{fig:REG2_time} depicts a 
+complete input cycle of REG2, \textit{each} increment or update in REG2 triggers the control signal sequence. Thus, every time IN2 is updated (e.g., when IN2 changes from 0 to 1, or from
+1 to 2, and so on), the corresponding control signals (RST, START, and DONE) are activated, ensuring that the ALU controller processes each new input reliably and synchronously with the 
+clock signal.
 
 All control signals (\texttt{RST}, \texttt{START}, and \texttt{DONE}) are held high for \textit{two full clock cycles} rather than one to ensure the controller registers each transition
 reliably. This design choice prevents race conditions and ensures that state changes are properly latched. The effect of this timing strategy will become more evident in later sections
 when the behavior of the sub-controllers is analyzed.
+
+Furthermore, since every change in input results in the control signals in diagram \ref{fig:ctrl_time}, every input that is changed in the timing diagram \ref{fig:REG2_time} has these
+signals working in the background.
 
 \subsection{Testbench Module Instantiations}
 In order to use the macro in the testbench, the modules to be tested need to be instantiated in the testbench. This is done by creating instances of the modules that are to be tested
@@ -869,19 +892,83 @@ Once the division operation is finished, a \texttt{DONE} state is entered, where
 controller can proceed to the next operation.
 
 \section{Waveform Analysis}
+Every operation performed by the ALU produces an output observable in waveform form. These waveforms are tied to the ALU controller’s output registers, with each register reflecting part of the computed result. The three key output 
+registers are:
+\begin{itemize}
+    \item \textbf{p\_high\_latch}: The high portion of the output register that is used to store the final result of operations with sectional outputs.
+    \item \textbf{p\_low\_latch}: The low portion of the output register that is used to store the final result of most standard operations.
+    \item \textbf{flag\_latch}: The flag register that is used to represent any single bit results of the operations. 
+\end{itemize}
 
+Every output register utilizes the latch discussed in the subsection \textbf{Latch Implementation} in order to create a stable output wave to analyze.
 
+Every operation from the opcodes are processed in one continuous waveform that can be represented with these three registers and can be deconstructed to analyze how the different operations are outputted.
 \subsection{Addition Waveform}
+The first waveform discussed is the simplest to understand, since it follows a strict pattern that can be easily analyzed. Because of the method used to iterate through the operations, a distinct pattern can be formed that shows a progressive growth
+of two output signals. The output signals used in the addition operation are as follows:
+\begin{itemize}
+    \item \textbf{flag\_latch}: Represents any carry bits produced by the addition operation.
+    \item \textbf{p\_low\_latch}: Represents the output of the addition operation.
+\end{itemize}
+
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{figures/addition_waveform.png}
-    \caption{Addition waveform from the ALU}
+    \caption{Addition waveform from the ALU from GTKWave}
     \label{fig:add_wave}
 \end{figure}
 
 \subsubsection*{Addition Timing Diagram}
+The waveform can be decomposed into sectional outputs, where each section represents a single bit, such as what is shown in figure \ref{fig:add_wave}. As the addition operation produces a single-segment result, the \texttt{p\_high\_latch} remains inactive. 
+Only \texttt{p\_low\_latch} is engaged, representing a 4-bit result, while \texttt{flag\_latch} captures overflow through the carry bit. The output of \texttt{p\_low\_latch} is observed bit-wise, labeled \texttt{OUT1} through \texttt{OUT4}, with bit 
+significance increasing from LSB to MSB.
+\begin{figure}[H]
+    \centering
+    \begin{tikztimingtable}[timing/slope=0, xscale=1.2]
+        CARRY & 16L \\
+        OUT4 & 7L 8H 1L \\
+        OUT3 & 3L 4H 4L 4H 1L\\
+        OUT2 & 1L 3{2H2L} 2H 1L \\
+        OUT1 & 8{HL} \\
+    \end{tikztimingtable}
+    \caption{Timing diagram of the addition operation, showing the first complete input cycle}
+\end{figure}
+
+The output of the addition operation follows the same general pattern for its \texttt{OUT} signals with the only register showing any changes over time being the \texttt{CARRY} signal. At the end of the first complete input cycle, the \texttt{CARRY} signal
+briefly rises, increasing its duration with each successive addition of larger numbers.
+
+For example, the next input cycle following the logic adds \texttt{0001} instead of \texttt{0000} to all possible combinations of \texttt{in2}. This results in an output shown as:
+
+\begin{figure}[H]
+    \centering
+    \begin{tikztimingtable}[timing/slope=0, xscale=1.2]
+        CARRY & 14L 1H 1L \\
+        OUT4 & 7L 8H 1L \\
+        OUT3 & 3L 4H 4L 4H 1L\\
+        OUT2 & 1L 3{2H2L} 2H 1L \\
+        OUT1 & 8{HL} \\
+    \end{tikztimingtable}
+    \caption{Timing diagram of the addition operation, showing the second complete input cycle}
+\end{figure}
+
+The next input cycle would then be \texttt{0010} instead of \texttt{0001}, and results in the following output:
+\begin{figure}[H]
+    \centering
+    \begin{tikztimingtable}[timing/slope=0, xscale=1.2]
+        CARRY & 13L 2H 1L \\
+        OUT4 & 7L 8H 1L \\
+        OUT3 & 3L 4H 4L 4H 1L\\
+        OUT2 & 1L 3{2H2L} 2H 1L \\
+        OUT1 & 8{HL} \\
+    \end{tikztimingtable}
+    \caption{Timing diagram of the addition operation, showing the third complete input cycle}
+\end{figure}
+
+This is the overall growth and pattern that follows the addition operation logic as larger and larger numbers are added.
 
 \subsection{Subtraction Waveform}
+The second waveform discussed is the subtraction operation. Subtraction reuses the same latches as addition but interprets the flag register as a borrow bit and exhibits a decaying, rather than growing, flag waveform.
+
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{figures/subtraction_waveform.png}
@@ -890,6 +977,39 @@ controller can proceed to the next operation.
 \end{figure}
 
 \subsubsection*{Subtraction Timing Diagram}
+The subtraction operation is decomposed identically as the addition operation was, with the same output signals being used. However, the \texttt{CARRY} signal is now replaced with a \texttt{BORROW} signal, which is used to represent any borrow bits
+produced by the subtraction operation. Furthermore, the subtraction operation experiences a decay in its \texttt{BORROW} signal instead of a growth like the addition operation.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikztimingtable}[timing/slope=0, xscale=1.2]
+        BORROW & 15H 1L \\
+        OUT4 & 8H 8L \\
+        OUT3 & 4H 1{4L4H} 4L \\
+        OUT2 & 2H 3{2L2H} 2L \\
+        OUT1 & 8{HL} \\
+    \end{tikztimingtable}
+    \caption{Timing diagram of the subtraction operation, showing the first complete input cycle}
+\end{figure}
+
+Negative results are produced via two’s‑complement: the output bits are inverted, then the borrow bit is asserted to complete the +1 step. This is done by taking the 2's complement of the output signal, which is done by inverting the output signal and 
+adding 1 to it. Essentially, the outputs are inverted from that seen in the addition operation. So instead of the output being \texttt{0000} for the first input cycle, it is now \texttt{1111} with a borrow of \texttt{1}. For the remaining cycles, the 
+output is the same, but the borrow signal decays in length.
+
+Using the same example as before, the output from the next input cycle is:
+\begin{figure}[H]
+    \centering
+    \begin{tikztimingtable}[timing/slope=0, xscale=1.2]
+        BORROW & 14H 2L \\
+        OUT4 & 8H 8L \\
+        OUT3 & 4H 1{4L4H} 4L \\
+        OUT2 & 2H 3{2L2H} 2L \\
+        OUT1 & 8{HL} \\
+    \end{tikztimingtable}
+    \caption{Timing diagram of the subtraction operation, showing the second complete input cycle}
+\end{figure}
+
+This is the overall decay pattern that follows the subtraction operation logic as larger and larger numbers are subtracted.
 
 \subsection{Multiplication Waveform}
 \begin{figure}[H]
@@ -900,6 +1020,18 @@ controller can proceed to the next operation.
 \end{figure}
 
 \subsubsection*{Multiplication Timing Diagram}
+\begin{figure}[H]
+    \centering
+    \begin{tikztimingtable}[timing/slope=0, xscale=1.2]
+        and so on... \\
+        OUT1 HIGH & 23L 8H 1L \\
+        OUT4 LOW & 7L 1{8H} 3L 1L 1{4H4L} 4H 1L \\
+        OUT3 LOW & 3L 1{4H4L} 4H 2L 3{2H2L} 2H 1L \\
+        OUT2 LOW & 1L 3{2H2L} 2H 1L 8{HL} \\
+        OUT1 LOW & 8{HL} 16L\\
+    \end{tikztimingtable}
+    \caption{Timing diagram of the multiplication operation, showing the first two complete input cycles}
+\end{figure}
 
 \subsection{Division Waveform}
 \begin{figure}[H]
@@ -910,6 +1042,19 @@ controller can proceed to the next operation.
 \end{figure}
 
 \subsubsection*{Division Timing Diagram}
+\begin{figure}[H]
+    \centering
+    \begin{tikztimingtable}[timing/slope=0, xscale=1.2]
+        and so on... \\
+        OUT1 HIGH & 17L 1H 14L \\
+        OUT4 LOW & 32L \\
+        OUT3 LOW & 32L \\
+        OUT2 LOW & 32L \\
+        OUT1 LOW & 18L 14H \\
+        SAMPLE & 16{HL} \\
+    \end{tikztimingtable}
+    \caption{Timing diagram of the division operation, showing the first two complete input cycles}
+\end{figure}
 
 \section{Challenges and Solutions}
 \subsection{Clock Signal Implementation}
