@@ -903,6 +903,7 @@ registers are:
 Every output register utilizes the latch discussed in the subsection \textbf{Latch Implementation} in order to create a stable output wave to analyze.
 
 Every operation from the opcodes are processed in one continuous waveform that can be represented with these three registers and can be deconstructed to analyze how the different operations are outputted.
+
 \subsection{Addition Waveform}
 The first waveform discussed is the simplest to understand, since it follows a strict pattern that can be easily analyzed. Because of the method used to iterate through the operations, a distinct pattern can be formed that shows a progressive growth
 of two output signals. The output signals used in the addition operation are as follows:
@@ -992,9 +993,8 @@ produced by the subtraction operation. Furthermore, the subtraction operation ex
     \caption{Timing diagram of the subtraction operation, showing the first complete input cycle}
 \end{figure}
 
-Negative results are produced via two’s‑complement: the output bits are inverted, then the borrow bit is asserted to complete the +1 step. This is done by taking the 2's complement of the output signal, which is done by inverting the output signal and 
-adding 1 to it. Essentially, the outputs are inverted from that seen in the addition operation. So instead of the output being \texttt{0000} for the first input cycle, it is now \texttt{1111} with a borrow of \texttt{1}. For the remaining cycles, the 
-output is the same, but the borrow signal decays in length.
+Negative results are produced via two’s‑complement: the output bits are inverted, then the borrow bit is asserted to complete the +1 step. Essentially, the outputs are the opposite from that seen in the addition operation. So instead of the output being 
+\texttt{0000} for the first input cycle, it is now \texttt{1111} with a borrow of \texttt{1}. For the remaining cycles, the output is the same, but the borrow signal decays in length.
 
 Using the same example as before, the output from the next input cycle is:
 \begin{figure}[H]
@@ -1012,6 +1012,15 @@ Using the same example as before, the output from the next input cycle is:
 This is the overall decay pattern that follows the subtraction operation logic as larger and larger numbers are subtracted.
 
 \subsection{Multiplication Waveform}
+The third waveform discussed is the multiplication operation. This operation differs in its output signals and are not as cleanly represented like how addition or subtraction are however, there still exists a pattern within the waveform. The output
+for the multiplication operation is split into two outputs:
+\begin{itemize}
+    \item \textbf{p\_high\_latch}: Represents the high output bits of the multiplication operation.
+    \item \textbf{p\_low\_latch}: Represents the low output bits of the multiplication operation.
+\end{itemize}
+
+This is to keep the size of bits similar across the system and is due to the incrreased size of the output produced by multiplying two numbers. 
+
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{figures/multiplication_waveform.png}
@@ -1020,6 +1029,9 @@ This is the overall decay pattern that follows the subtraction operation logic a
 \end{figure}
 
 \subsubsection*{Multiplication Timing Diagram}
+The waveform can be decomposed into sectional outputs, similar to how they are demonstrated before, and is shown in figure \ref{fig:mul_wave}. Since the output representation has changed, the \texttt{p\_high\_latch} becomes active and the
+\texttt{flag\_latch} becomes inactive. Both high and low latches capture a designated 4-bit result, with the latch method remaining consistent. Both high and low outputs are also observed bit-wise and are labeled \texttt{OUT1} through 
+\texttt{OUT4}, with bit significance increasing the same way as before.
 \begin{figure}[H]
     \centering
     \begin{tikztimingtable}[timing/slope=0, xscale=1.2]
@@ -1030,8 +1042,26 @@ This is the overall decay pattern that follows the subtraction operation logic a
         OUT2 LOW & 1L 3{2H2L} 2H 1L 8{HL} \\
         OUT1 LOW & 8{HL} 16L\\
     \end{tikztimingtable}
-    \caption{Timing diagram of the multiplication operation, showing the first two complete input cycles}
+    \caption{Timing diagram of the multiplication operation, showing the next two complete input cycles after the first}
 \end{figure}
+
+From the first two input cycles, it is observed that the waveform is being shifted up the output register. This is due to the nature of the multiplication operation, where the output is shifted based on the bits of the multiplicand. However,
+this pattern does not remain consistent across the entire multiplication operation:
+\begin{figure}[H]
+    \centering
+    \begin{tikztimingtable}[timing/slope=0, xscale=1.2]
+        and so on... \\
+        OUT2 HIGH & 8L 3H 11L 8H 2L \\
+        OUT1 HIGH &  5L 3H 11L 3H 5L 3H 2L \\
+        OUT4 LOW & 2L 3H 2L 3H 3L 2H 4{2L2H} 1L \\
+        OUT3 LOW & L H L 2H L H 2L H L 2H L H L 8{HL} \\
+        OUT2 LOW & 3{2H2L} 2H 18L \\
+        OUT1 LOW & 8{HL} 16L\\
+    \end{tikztimingtable}
+    \caption{Timing diagram of the multiplication operation, showing the next two complete input cycles after the previous}
+\end{figure}
+
+% Discuss how the wavefrom progressively grows; mention where we start the signal: e.g. when in1 is 1, and in2 goes through its inputs 
 
 \subsection{Division Waveform}
 \begin{figure}[H]
