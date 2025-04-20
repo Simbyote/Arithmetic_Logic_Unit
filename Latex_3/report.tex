@@ -1012,14 +1012,13 @@ Using the same example as before, the output from the next input cycle is:
 This is the overall decay pattern that follows the subtraction operation logic as larger and larger numbers are subtracted.
 
 \subsection{Multiplication Waveform}
-The third waveform discussed is the multiplication operation. This operation differs in its output signals and are not as cleanly represented like how addition or subtraction are however, there still exists a pattern within the waveform. The output
-for the multiplication operation is split into two outputs:
+The third waveform discussed is the multiplication operation. Multiplication in the ALU differs from addition and subtraction because it produces twice as many bits, which are split into two outputs to maintain uniformity:
 \begin{itemize}
     \item \textbf{p\_high\_latch}: Represents the high output bits of the multiplication operation.
     \item \textbf{p\_low\_latch}: Represents the low output bits of the multiplication operation.
 \end{itemize}
 
-This is to keep the size of bits similar across the system and is due to the incrreased size of the output produced by multiplying two numbers. 
+This is to keep the size of bits similar across the system and is due to the increased size of the output produced by multiplying two numbers. 
 
 \begin{figure}[H]
     \centering
@@ -1030,8 +1029,8 @@ This is to keep the size of bits similar across the system and is due to the inc
 
 \subsubsection*{Multiplication Timing Diagram}
 The waveform can be decomposed into sectional outputs, similar to how they are demonstrated before, and is shown in figure \ref{fig:mul_wave}. Since the output representation has changed, the \texttt{p\_high\_latch} becomes active and the
-\texttt{flag\_latch} becomes inactive. Both high and low latches capture a designated 4-bit result, with the latch method remaining consistent. Both high and low outputs are also observed bit-wise and are labeled \texttt{OUT1} through 
-\texttt{OUT4}, with bit significance increasing the same way as before.
+\texttt{flag\_latch} is now disabled. Both high and low latches capture a pre-designated 4-bit result, with the latch method remaining consistent. Both high and low outputs are also observed bit-wise and are labeled \texttt{OUT1} through 
+\texttt{OUT4} for both outputs respectively. Furthermore, their bit significance increases the same way as before: by increments of one for inputs one and two.
 \begin{figure}[H]
     \centering
     \begin{tikztimingtable}[timing/slope=0, xscale=1.2]
@@ -1045,8 +1044,8 @@ The waveform can be decomposed into sectional outputs, similar to how they are d
     \caption{Timing diagram of the multiplication operation, showing the next two complete input cycles after the first}
 \end{figure}
 
-From the first two input cycles, it is observed that the waveform is being shifted up the output register. This is due to the nature of the multiplication operation, where the output is shifted based on the bits of the multiplicand. However,
-this pattern does not remain consistent across the entire multiplication operation:
+The timing diagram above starts with an input of \texttt{0001} instead of \texttt{0000} since the output produces no significant information; the output is 0. Furthermore, it is observed that the waveform is being shifted up the output register.
+This is due to the method used to solve the multiplication in binary, where the output is shifted based on the bits of the multiplicand. However, this pattern does not remain consistent across the entire multiplication operation as shown below:
 \begin{figure}[H]
     \centering
     \begin{tikztimingtable}[timing/slope=0, xscale=1.2]
@@ -1061,9 +1060,23 @@ this pattern does not remain consistent across the entire multiplication operati
     \caption{Timing diagram of the multiplication operation, showing the next two complete input cycles after the previous}
 \end{figure}
 
-% Discuss how the wavefrom progressively grows; mention where we start the signal: e.g. when in1 is 1, and in2 goes through its inputs 
+As the multiplication operation continues, the upper output registers are utilized more frequently and present a growth similar to that seen in the addition operation. The waveforms slowly grow into the pattern observed in the input cycles in these upper bits, 
+like how \ref{fig:REG2_time} shows.
+
+\subsubsection*{Mirror Symmetry Effect}
+A key observation of the lower output registers in the multiplication operation timing diagrams is that the pattern between the multiplicand of any number $M$ and $16-M$ are bit-wise complements of one another. For this to occur, \texttt{M} would need to be 
+greater than \texttt{0} and less than the \texttt{width} of the bits; here the \texttt{width} is assigned to \texttt{4}. In essence, the output of one half of the waveform is a mirror image of its other half. This is a property of \textbf{half-wave symmetry}, where the output of the waveform is a mirror image 
+of itself across a vertical line drawn through the midpoint of a waveform. This mirror image can be described as the two's complement of the first half of the waveform. 
+
+In the waveform shown in \ref{fig:mul_wave}, the mirror can be observed at the midpoint \texttt{8}.
 
 \subsection{Division Waveform}
+The fourth waveform discussed is the division operation. Division in the ALU is similar to multiplication in that it utilizes the two same output registers as the multiplication operation:
+\begin{itemize}
+    \item \textbf{p\_high\_latch}: Represents the quotient of the division operation.
+    \item \textbf{p\_low\_latch}: Represents the remainder of the division operation.
+\end{itemize}
+
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{figures/division_waveform.png}
@@ -1072,18 +1085,36 @@ this pattern does not remain consistent across the entire multiplication operati
 \end{figure}
 
 \subsubsection*{Division Timing Diagram}
+
 \begin{figure}[H]
     \centering
     \begin{tikztimingtable}[timing/slope=0, xscale=1.2]
         and so on... \\
-        OUT1 HIGH & 17L 1H 14L \\
+        OUT2 HIGH & 16L H 15L \\
+        OUT1 HIGH & H 16L H 14L \\
         OUT4 LOW & 32L \\
         OUT3 LOW & 32L \\
-        OUT2 LOW & 32L \\
-        OUT1 LOW & 18L 14H \\
+        OUT2 LOW & 18L 14H \\
+        OUT1 LOW & L 14H 17L \\
         SAMPLE & 16{HL} \\
     \end{tikztimingtable}
-    \caption{Timing diagram of the division operation, showing the first two complete input cycles}
+    \caption{Timing diagram of the division operation, showing the next two complete input cycles after the first.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{tikztimingtable}[timing/slope=0, xscale=1.2]
+        and so on... \\
+        OUT3 HIGH & 17L H 14L \\
+        OUT2 HIGH & L H 16L H 13L \\
+        OUT1 HIGH & L 3H 15L 2H 11L \\
+        OUT4 LOW & 32L \\
+        OUT3 LOW & 21L 11H \\
+        OUT2 LOW & 4L 12H 16L\\
+        OUT1 LOW & 2L H L 12H 3L H 12L \\
+        SAMPLE & 16{HL} \\
+    \end{tikztimingtable}
+    \caption{Timing diagram of the division operation, showing the next two complete input cycles after the previous.}
 \end{figure}
 
 \section{Challenges and Solutions}
