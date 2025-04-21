@@ -82,7 +82,14 @@
 \newpage
 \setcounter{page}{1}
 
-\section{Abstract}
+\begin{abstract}
+    This report describes the design, implementation, and verification of a 4‑bit Arithmetic Logic Unit in Verilog using a hierarchical, modular approach.  
+    Core combinational submodules implement logic gates, addition, subtraction, multiplication, and division, while a finite‑state‑machine controller sequences
+    multi‑cycle operations. A generic Verilog testbench exercises all opcodes and operands with GTKWave timing diagrams revealing a clear, operation‑specific
+    patterns such as a rising staircase remainder in division and half‑wave mirror symmetry in multiplication, confirming correct synchronization between data
+    paths and control logic. The result is a fully functional, easily extensible ALU whose design balances clarity, reusability, and testability, laying the 
+    groundwork for future enhancements.
+\end{abstract}
 
 \section{Background}
 This report is the third part of a project that aims to develop an ALU using Verilog. The ALU could not be as functional as it is currently without
@@ -1031,6 +1038,7 @@ This is to keep the size of bits similar across the system and is due to the inc
 The waveform can be decomposed into sectional outputs, similar to how they are demonstrated before, and is shown in figure \ref{fig:mul_wave}. Since the output representation has changed, the \texttt{p\_high\_latch} becomes active and the
 \texttt{flag\_latch} is now disabled. Both high and low latches capture a pre-designated 4-bit result, with the latch method remaining consistent. Both high and low outputs are also observed bit-wise and are labeled \texttt{OUT1} through 
 \texttt{OUT4} for both outputs respectively. Furthermore, their bit significance increases the same way as before: by increments of one for inputs one and two.
+
 \begin{figure}[H]
     \centering
     \begin{tikztimingtable}[timing/slope=0, xscale=1.2]
@@ -1085,6 +1093,9 @@ The fourth waveform discussed is the division operation. Division in the ALU is 
 \end{figure}
 
 \subsubsection*{Division Timing Diagram}
+The waveform is decomposed into similar sectional outputs as before, with the \texttt{p\_high\_latch} representing the quotient calculated and the \texttt{p\_low\_latch} representing any
+remainder. Thus, both the  \texttt{p\_high\_latch} and the \texttt{p\_low\_latch} are still enabled during this operation. The same method of incrementing is applied here as it was done 
+previously.
 
 \begin{figure}[H]
     \centering
@@ -1100,6 +1111,10 @@ The fourth waveform discussed is the division operation. Division in the ALU is 
     \end{tikztimingtable}
     \caption{Timing diagram of the division operation, showing the next two complete input cycles after the first.}
 \end{figure}
+
+The diagram begins at the second input cycle, when \texttt{in1} is \texttt{0001} to avoid dividing numbers by \texttt{0}. Furthermore, it shows both the remaining bits and the quotient 
+from the operations \texttt{0001} and \texttt{0010}, capturing their results as \texttt{in2} is iterated upon. The pattern showcased maintains a consistent and predictable flow, similarly
+seen in the addition operation.
 
 \begin{figure}[H]
     \centering
@@ -1117,36 +1132,27 @@ The fourth waveform discussed is the division operation. Division in the ALU is 
     \caption{Timing diagram of the division operation, showing the next two complete input cycles after the previous.}
 \end{figure}
 
-\section{Challenges and Solutions}
-\subsection{Clock Signal Implementation}
-\subsection{Addition Timing Mismatch}
-\subsection{Refactoring Division Operation}
-
-\section{Potential Improvements}
-\subsection{Adding Negative Number Support}
-\subsection{Adding Floating Point Support}
-\subsection{Refactoring Multiplier and Divider Controllers}
-\subsubsection*{Implementations Closer to Real Hardware}
-\subsection{Adding Additional Operations}
+Every iteration produces a step on \texttt{p\_high\_latch} to the quotient and updates \texttt{p\_low\_latch} to the new remainder, which remains constant for the following shift phase. 
+This alternating pulse‑and‑hold pattern yields a rising‑staircase on the remainder bus, since successive subtractions accumulate interleaved with single‑cycle high pulses on the quotient
+bus. When the partial remainder falls below the divisor, the quotient bit is \texttt{0}, and the \texttt{p\_high\_latch} remains low. Furthermore, the \texttt{p\_low\_latch} shifts the 
+previous remainder forward. Only when the remainder is greater than the divisor is when a non-zero stair-step occurs.
 
 \section{Conclusion}
+Throughout the project, a successful 4‑bit ALU in Verilog is built by applying a clean, hierarchical design methodology. Simple combinational cores for each arithmetic and logic function, 
+driven by a central FSM‑based controller allowed for a robust ALU with greater capabilities as its iterations were expanded on. Further separating core modules from their subcontrollers 
+made the codebase more maintainable and simplified timing‑mismatches encountered while debugging. Extensive testing using testbenchs helped to cover every possibility in the ALU and GTKWave
+waveform analysis demonstrated that every operation behaves as expected. The addition and subtraction operations exhibited a growth/decay pattern in their carry/borrow flags, multiplication
+operations showcase a form of half‑wave symmetry, and division operations producing a distinctive sawtooth-esq remainder pattern.
 
-\section{Thoughts and Notes}
+Looking ahead, there are several promising avenues for enhancement:
 \begin{itemize}
-    \item \textbf{Missing Final Bit in Multiplier}: Refactoring of the current Multiplier was necessary so that it can run sequentially rather than all at once.
-        However, a few bugs were encountered while trying to implement this new feature. The main issue with the final product was that the control logic was 
-        performing what seemed like \textit{one extra step} in the multiplication step. More specifically, this extra step was found to be at every instance of
-        in2 where its value was at its maximum. This caused an incorrect final output to be produced. What was found to be the source of the issue was that the
-        FSM was \textit{conditionally updating the output registers} only when \textit{is\_equal} was true, otherwise it would skip the assignment. As a result,
-        the final clock cycle would transition into the DONE state without properly updating the output registers for the final output. A resolution was developed
-        that reshaped the logic in the \textit{STEP} and \textit{DONE} states, moving the final assignment out of DONE and into the STEP state while adding additional
-        logic checks to ensure that the output registers were properly updated when they needed to be.
-    \item \textbf{Timing Mismatch in Addition}: Refactoring the Adder Module was similarly done as the Multiplier Module. However, a bug was encountered where the output
-        of the adder was shifted up the output register. This was found to be due to the timing of the output register assignment, where the output register was
-        being assigned the value of the output of the adder before the adder had finished its operation. To resolve this issue, we split the function into two 
-        different clock cycles, one for the addition and one for the assignment of the output register. This allowed the adder to finish its operation before the
-        output register was assigned the value of the output of the adder.
+  \item \textbf{Signed‑Number Support:} Extend addition, subtraction, and comparison logic to handle two’s‑complement operands.  
+  \item \textbf{Floating‑Point Unit:} Integrate IEEE‑754 compliant modules for real‑number arithmetic.  
+  \item \textbf{FPGA Synthesis \& Timing Closure:} Port the design to an FPGA platform, optimize for setup/hold times, and verify performance under real‑world clock constraints.  
+  \item \textbf{Performance Optimizations:} Explore look‑ahead carry adders, non‑restoring division algorithms, or pipelined control to reduce cycle counts.  
 \end{itemize}
+
+These extensions will deepen the ALU’s capabilities and further validate the scalability of the modular, controller‑driven architecture.
 
 \end{document}
 
