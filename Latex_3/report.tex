@@ -1107,7 +1107,6 @@ previously.
         OUT3 LOW & 32L \\
         OUT2 LOW & 18L 14H \\
         OUT1 LOW & L 14H 17L \\
-        SAMPLE & 16{HL} \\
     \end{tikztimingtable}
     \caption{Timing diagram of the division operation, showing the next two complete input cycles after the first.}
 \end{figure}
@@ -1127,7 +1126,6 @@ seen in the addition operation.
         OUT3 LOW & 21L 11H \\
         OUT2 LOW & 4L 12H 16L\\
         OUT1 LOW & 2L H L 12H 3L H 12L \\
-        SAMPLE & 16{HL} \\
     \end{tikztimingtable}
     \caption{Timing diagram of the division operation, showing the next two complete input cycles after the previous.}
 \end{figure}
@@ -1144,7 +1142,7 @@ made the codebase more maintainable and simplified timing‑mismatches encounter
 waveform analysis demonstrated that every operation behaves as expected. The addition and subtraction operations exhibited a growth/decay pattern in their carry/borrow flags, multiplication
 operations showcase a form of half‑wave symmetry, and division operations producing a distinctive sawtooth-esq remainder pattern.
 
-Looking ahead, there are several promising avenues for enhancement:
+Looking ahead, there are several avenues for enhancement:
 \begin{itemize}
   \item \textbf{Signed‑Number Support:} Extend addition, subtraction, and comparison logic to handle two’s‑complement operands.  
   \item \textbf{Floating‑Point Unit:} Integrate IEEE‑754 compliant modules for real‑number arithmetic.  
