@@ -1,46 +1,31 @@
 \documentclass[12pt]{article}
 
-\usepackage{fancyhdr}   
+\usepackage{fancyhdr}       % headers and footers
 \usepackage[utf8]{inputenc} % allow utf-8 input
 \usepackage[T1]{fontenc}    % use 8-bit T1 fonts
 \usepackage{hyperref}       % hyperlinks
-\usepackage{graphicx}    % include graphics
-\usepackage{natbib}         
-\usepackage{doi}    
-\usepackage{listings}
-\usepackage{xcolor}
-\usepackage[american]{circuitikz}
-\usepackage{tikz}
-\usepackage{pgfplots}
-\usepackage{pgfplotstable}
-\usepackage{float}
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{enumitem}
+\usepackage{graphicx}       % include graphics
+\usepackage{natbib}         % citations
+\usepackage{doi}            % doi links
+\usepackage{listings}       % code blocks
+\usepackage{xcolor}         % colors
+\usepackage[american]{circuitikz}   % circuit diagrams
+\usepackage{tikz}           % tikz diagrams
+\usepackage{pgfplots}       % timing diagrams
+\usepackage{pgfplotstable}  % tables
+\usepackage{float}          % floats
+\usepackage{amsmath}        % math
+\usepackage{amssymb}        % math symbols
+\usepackage{enumitem}       % enumerate
 \setcitestyle{aysep={,}}
 
 % Header information
-\newcommand{\Group}{Group Uno}
+\newcommand{\ProjectName}{Arithmetic Logic Unit}
 \newcommand{\Mike}{Mike Orduna}
-\newcommand{\Noah}{Noah Murphy}
-\newcommand{\Alex}{Alex Livingston}
-\newcommand{\Class}{CS 3339: Computer Architecture}
 \newcommand{\ReportPart}{Part Two}
-\newcommand{\School}{Ingram School of Engineering}
+\title{\ProjectName: \ReportPart}
 
-\title{Project Report: \ReportPart}
-\author{
-    \textbf{\Class} \\
-    \\
-    \textbf{\Group:} 
-    \\
-    \Mike\\
-    \Noah\\
-    \Alex\\
-    \\
-    \\
-    \School
-}
+\author{\Mike}
 \date{\today}
 
 \definecolor{codegreen}{rgb}{0,0.6,0}

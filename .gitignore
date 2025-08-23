@@ -1,16 +1,5 @@
-# Ignore the output directory
-Project/output/
-Latex_1/output
-Latex_1/figures
-Latex_1/report.pdf
-Latex_1/samplereport.md
-
-Latex_2/output
-Latex_2/figures
-Latex_2/report.pdf
-Latex_2/samplereport.md
-
-Latex_3/output
-Latex_3/figures
-Latex_3/report.pdf
-Latex_3/samplereport.md
+# Ignore the output directories
+Project/docs/Latex_1/output/
+Project/docs/Latex_2/output/
+Project/docs/Latex_3/output/
+Project/out/
