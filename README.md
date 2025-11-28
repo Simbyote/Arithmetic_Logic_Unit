@@ -62,3 +62,22 @@ These flags are available in both combinational and sequential variants.
 
 ## License
 Licensed under the MIT License. See `LICENSE` for details
+
+```mermaid
+flowchart TD
+    A[in1] --> C[ALU Controller]
+    B[in2] --> C
+    C --> D[out_low]
+    C --> E[out_high]
+
+    C --> F{Operation}
+
+    F --> G[Adder]
+    F --> H[Subtractor]
+    F --> I[Shifter]
+    F --> J[Multiplier]
+    F --> K[Divider]
+```
+*This diagram shows the conceptual structure of the ALU.  
+All modules run in parallel; the controller selects which result to forward 
+based on the opcode.*
