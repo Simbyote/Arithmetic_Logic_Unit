@@ -1,5 +1,5 @@
 /*
- * testbench_mxnbits.v
+ * tb_mxnbits.v
  * 
  * Purpose:
  * - This file serves as a testbench for the mXnBits gates implemented in mXnBits_gates.v
@@ -14,7 +14,7 @@
  * - The simulation generates a VCD file named `waveform3.vcd` for visualization
  */
 `timescale 1ns/1ns
-module testbench_mXnBits;
+module tb_mXnBits;
     parameter WIDTH = 4;              // The number of bits for the input-output
     parameter BIT_STATE = 2 ** WIDTH; // The total possible states for the given bit WIDTH
     parameter SETS = 2;               // The number of binary values to evaluate at a time
@@ -152,7 +152,7 @@ module testbench_mXnBits;
          * - Includes all signals from the testbench_mXnBits module
          */
         $dumpfile( "waveform3.vcd" );
-        $dumpvars( 0, testbench_mXnBits );
+        $dumpvars( 0, tb_mXnBits );
 
         test_mXnBits;
         

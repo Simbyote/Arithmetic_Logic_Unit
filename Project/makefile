@@ -5,13 +5,13 @@ SIMULATOR = vvp
 # Directories
 CURR_DIR = $(shell pwd)
 SRC_DIR = $(CURR_DIR)/src
-TEST_DIR = $(CURR_DIR)/testbenches
-OUT_DIR = $(CURR_DIR)/output
+TEST_DIR = $(CURR_DIR)/tb
+OUT_DIR = $(CURR_DIR)/out
 WAVE_DIR = $(OUT_DIR)/waveforms
 SIM_DIR = $(OUT_DIR)/simulations
 
-# Files
-SRC_FILES = $(wildcard $(SRC_DIR)/*.v)
+# Recursively gather all Verilog files in src/
+SRC_FILES = $(shell find $(SRC_DIR) -type f -name "*.v")
 TESTBENCHES = $(wildcard $(TEST_DIR)/*.v)
 
 # Simulation targets
@@ -27,7 +27,7 @@ build:
 
 # Build the simulation targets
 $(SIM_DIR)/%.out: $(TEST_DIR)/%.v $(SRC_FILES)
-	$(IVERILOG) -o $@ $(SRC_FILES) $<
+	$(IVERILOG) -g2012 -o $@ $(SRC_FILES) $<
 
 # Run all the simulations
 run: $(SIMULATIONS)

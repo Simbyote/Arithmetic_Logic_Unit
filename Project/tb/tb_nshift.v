@@ -1,5 +1,5 @@
 /*
- * testbench_nShift.v
+ * tb_nShift.v
  *
  * Purpose:
  * - This file serves as a testbench for the n-bit shift module implemented in arithmetic_operations.v
@@ -14,7 +14,7 @@
  */
 
 `timescale 1ns/1ns
-module testbench_nShift;
+module tb_nShift;
     parameter WIDTH = 4;    // The number of bits for the input-output
     parameter BIT_STATE = 2 ** WIDTH;   // The total possible states for the given bit WIDTH
 
@@ -85,7 +85,7 @@ module testbench_nShift;
 
     initial begin
         $dumpfile( "waveform4.vcd" );
-        $dumpvars( 0, testbench_nShift );
+        $dumpvars( 0, tb_nShift );
 
             test_nShift;
 

@@ -1,5 +1,5 @@
 /*
- * testbench_bit.v
+ * tb_bit.v
  *
  * Purpose:
  * - This file serves as a testbench for the logic gates implemented in bit_gates.v
@@ -16,7 +16,7 @@
 
 
 `timescale 1ns/1ns
-module testbench_bit;
+module tb_bit;
     /*
      * Input signals & unique output signals for each gate
      */
@@ -95,7 +95,7 @@ module testbench_bit;
          * - Includes all signals in the testbench_bit module
          */
         $dumpfile( "waveform1.vcd" );
-        $dumpvars( 0, testbench_bit );
+        $dumpvars( 0, tb_bit );
 
         test_bit;
 

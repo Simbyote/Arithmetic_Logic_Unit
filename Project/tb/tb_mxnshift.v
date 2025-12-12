@@ -1,5 +1,5 @@
 /*
- * testbench_mXnShift.v
+ * tb_mXnShift.v
  *
  * Purpose:
  * - This file serves as a testbench for the mXnBits_Shift module implemented in mXnBits_Shift.v
@@ -13,7 +13,7 @@
  * - The simulation generates a VCD file named `waveform5.vcd` for visualization
  */
 `timescale 1ns/1ns
-module testbench_mXnShift;
+module tb_mXnShift;
     parameter WIDTH = 4;
     parameter BIT_STATE = 2 ** WIDTH;
     parameter SETS = 2;
@@ -119,7 +119,7 @@ module testbench_mXnShift;
 
     initial begin
         $dumpfile( "waveform5.vcd" );
-        $dumpvars( 0, testbench_mXnShift );
+        $dumpvars( 0, tb_mXnShift );
 
         test_mXnShift;
 

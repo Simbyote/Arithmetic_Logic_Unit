@@ -1,6 +1,6 @@
 `timescale 1ns/1ns
-module testbench_alu_control;
-    parameter WIDTH = 4;    // The number of bits for the input-output
+module tb_hierarchical;
+    parameter WIDTH = 3;    // The number of bits for the input-output
     parameter BIT_STATE = 2 ** WIDTH;   // The total possible states for the given bit WIDTH
 
     reg clk, reset, start;
@@ -120,7 +120,7 @@ module testbench_alu_control;
     wire [ WIDTH-1:0 ] alu_high, alu_low;
     wire alu_done, alu_flag;
 
-    Sequential_ALU #( .WIDTH( WIDTH ) ) alu_control_instance (
+    Hierarchical_ALU #( .WIDTH( WIDTH ) ) alu_control_instance (
         .clk( clk ),
         .reset( reset ),
         .start( start ),
@@ -202,7 +202,7 @@ module testbench_alu_control;
 
     initial begin
         $dumpfile( "waveform7.vcd" );
-        $dumpvars( 0, testbench_alu_control );
+        $dumpvars( 0, tb_hierarchical );
 
         `GENERIC_OPERATIONS( opcode, alu_in1, alu_in2, clk, reset, start, alu_done );
 

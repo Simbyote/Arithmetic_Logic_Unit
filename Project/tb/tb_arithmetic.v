@@ -1,5 +1,8 @@
+/*
+ * tb_arithmetic.v
+ */
 `timescale 1ns/1ns
-module testbench_combinational;
+module tb_arithmetic;
     parameter WIDTH = 4;    // The number of bits for the input-output
     parameter BIT_STATE = 2 ** WIDTH;   // The total possible states for the given bit WIDTH
 
@@ -132,7 +135,7 @@ module testbench_combinational;
 
     initial begin
         $dumpfile( "waveform6.vcd" );
-        $dumpvars( 0, testbench_combinational );
+        $dumpvars( 0, tb_arithmetic );
 
         `GENERIC_FULL( full_in1, full_in2 );
         

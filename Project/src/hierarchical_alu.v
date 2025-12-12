@@ -1,71 +1,79 @@
 /*
- * sequential_alu.v
+ * hierarchical_alu.v
  *
  * Purpose:
- * - Implement a sequential arithmetic logic unit (ALU) that performs arithmetic operations
- *   based on the opcode.
+ * - Implement a hierarchical ALU that performs arithmetic and logical operations based on the opcode
+ *   using a combinational output selector and sequential sub-controllers for multi-cycle operations. 
  *
  * Modules Included:
- * - Sequential_ALU: Controls the arithmetic operations based on the opcode
- * - Addition_Control: Controls the addition operation
- * - Subtraction_Control: Controls the subtraction operation
- * - Multiplier_Control: Controls the multiplication operation
- * - Divider_Control: Controls the division operation
+ * - Hierarchical_ALU: Combinational output selector that coordinates sub-controllers
+ * - Addition_Control: Sequential FSM controller for bit-serial addition
+ * - Subtraction_Control: Sequential FSM controller for bit-serial subtraction
+ * - Multiplier_Control: Sequential FSM controller for shift-and-add multiplication
+ * - Divider_Control: Sequential FSM controller for restoring division
  *
  * Parameters:
  * - WIDTH: The bit-width of the input and output signals
- * - OP: The operation to be performed (0 for shift left, 1 for shift right)
  *
  * Implementation:
- * - The "Sequential_ALU" module controls the arithmetic operations based on the opcode using a finite state machine
- * - The "Addition_Control" module controls the addition operation using a finite state machine
- * - The "Subtraction_Control" module controls the subtraction operation using a finite state machine
- * - The "Multiplier_Control" module controls the multiplication operation using a finite state machine
- * - The "Divider_Control" module controls the division operation using a finite state machine
+ * - The "Hierarchical_ALU" is the top-level module that uses a combinational case statement to select
+ *   outputs from instatiated sub-controllers and combinational modules based on the opcode
+ * - The multi-cycle operations ("Addition_Control", "Subtraction_Control", "Multiplier_Control", and 
+ *   "Divider_Control") use sequential FSM-based  controllers
+ * - Single-cycle operations (shifting, logic gates, and comparators) use purely combinational logic
+ * - All sub-controllers operate in parallel with the top-level "Hierarchical_ALU" multiplexes their outputs
  */
 
 /*
- * ALU_Control
+ * Hierarchical_ALU
+
  * Purpose: 
- * - Controls the arithmetic operations based on the opcode
+ * - Top-level combinational output selector for ALU operations
  *
  * Note:
- * - The ALU_Control module is a sequential controller that controls the arithmetic operations
- *   based on the opcode. The module is responsible for controlling the addition, subtraction,
- *   multiplication, division, shift left, and shift right operations.
- * - The module uses the Addition_Control, Subtraction_Control, Multiplier_Control, Divider_Control,
- *   and nBit_Shift modules to perform the arithmetic operations.
- * - The module uses a FSM to control the arithmetic operations.
+ * - This module is is not a part of a FSM and is purely combinational (indicated by "always@(*)" block)
+ * - All sub-controllers are instantiated and run in parallel
+ * - The opcode input selects which controller's output to forward
+ * - Sequential control happens within the sub-controllers and not within this top-level module
+ * - Single-cycle operations complete immediately
+ * - Multi-cycle operations complete when a sub-controller asserts the "done" signal
  */
-module Sequential_ALU #( parameter WIDTH = 4 ) (
-    input wire clk,
-    input wire reset,
-    input wire start,
-    input wire [ 3:0 ] opcode,
-    input wire [ WIDTH-1:0 ] in1,
-    input wire [ WIDTH-1:0 ] in2,
-    output reg [ WIDTH-1:0 ] out_high,   // Can represent the high output of multiplication, the remainder, or shift overflow
-    output reg [ WIDTH-1:0 ] out_low, // Can represent the quotient, sum, difference, or shift result
-    output reg flag,    // Can represent the carry and borrow flags
-    output reg done
-);
-    // ALU Operations
-    localparam [ 3:0 ]  ADD = 4'b0000,
-                    SUB = 4'b0001,
-                    MUL = 4'b0010,
-                    DIV = 4'b0011,
-                    SHL = 4'b0100,
-                    SHA = 4'b0101,
-                    LT  = 4'b0110,
-                    GT  = 4'b0111,
-                    EQ  = 4'b1000,
-                    AND = 4'b1001,
-                    OR  = 4'b1010,
-                    XOR = 4'b1011,
-                    NOT = 4'b1100;
-    reg [ 3:0 ] state;
+module Hierarchical_ALU #( parameter WIDTH = 4 ) (
+    // Inputs passed into sub-controllers
+    input wire clk,     // Clock input
+    input wire reset,   // Reset input
+    input wire start,   // Start input
 
-    // Addition Controller
+    input wire [ 3:0 ] opcode,
+    input wire [ WIDTH-1:0 ] in1, 
+    input wire [ WIDTH-1:0 ] in2,
+    output reg [ WIDTH-1:0 ] out_high,   // Multiplication, a remainder, or shift overflow
+    output reg [ WIDTH-1:0 ] out_low, // Quotient, sum, difference, or shift result
+    output reg flag,    // Carry or Borrow flag
+    output reg done     // Completion flag
+);
+    // Opcode definitions
+    localparam [ 3:0 ]  
+        // Multi-cycle operations
+        ADD = 4'b0000,
+        SUB = 4'b0001,
+        MUL = 4'b0010,
+        DIV = 4'b0011,
+        // Single-cycle operations
+        SHL = 4'b0100,
+        SHA = 4'b0101,
+        LT  = 4'b0110,
+        GT  = 4'b0111,
+        EQ  = 4'b1000,
+        AND = 4'b1001,
+        OR  = 4'b1010,
+        XOR = 4'b1011,
+        NOT = 4'b1100;
+
+    // ============== Multi-cycle Sequential Sub-Controllers ==============
+    // ====== All sub-controllers use a bit-serial FSM implementation =======
+
+    // Addition Controller 
     wire [ WIDTH-1:0 ] add_out;
     wire add_done, final_carry;
 
@@ -125,7 +133,10 @@ module Sequential_ALU #( parameter WIDTH = 4 ) (
         .done( div_done )
     );
 
-    // Shift Left Controller
+    // ============== Single-cycle Combinational Sub-Controllers ==============
+    // ====== All sub-controllers use a combinational implementation =======
+
+    // Logical Shift Left
     wire [ WIDTH-1:0 ] shl_out, shl_overflow;
 
     nBit_Shift #( .WIDTH( WIDTH ), .OP( 0 ) ) shl_instance (
@@ -135,7 +146,7 @@ module Sequential_ALU #( parameter WIDTH = 4 ) (
         .overflow( shl_overflow )
     );
 
-    // Shift Right Controller
+    // Arithmetic Shift Right
     wire [ WIDTH-1:0 ] shr_out, shr_overflow;
 
     nBit_Shift #( .WIDTH( WIDTH ), .OP( 1 ) ) shr_instance (
@@ -145,7 +156,7 @@ module Sequential_ALU #( parameter WIDTH = 4 ) (
         .overflow( shr_overflow )
     );
 
-    // Less than Controller
+    // Less than Comparator
     wire lt_out;
     
     Less_Than #( .WIDTH( WIDTH ) ) lt_instance (
@@ -154,7 +165,7 @@ module Sequential_ALU #( parameter WIDTH = 4 ) (
         .out( lt_out )
     );
 
-    // Greater than Controller
+    // Greater than Comparator
     wire gt_out;
 
     Greater_Than #( .WIDTH( WIDTH ) ) gt_instance (
@@ -163,7 +174,7 @@ module Sequential_ALU #( parameter WIDTH = 4 ) (
         .out( gt_out )
     );
 
-    // Equal Controller
+    // Equal to Comparator
     wire eq_out;
 
     Equal_To #( .WIDTH( WIDTH ) ) eq_instance (
@@ -172,45 +183,53 @@ module Sequential_ALU #( parameter WIDTH = 4 ) (
         .out( eq_out )
     );
 
-    // AND Controller
+    // bit-serial AND Gate
     wire [ WIDTH-1:0 ] and_out;
+
     nBit_AND #( .WIDTH( WIDTH ) ) and_instance (
         .in1( in1 ),
         .in2( in2 ),
         .out( and_out )
     );
 
-    // OR Controller
+    // bit-serial OR Gate
     wire [ WIDTH-1:0 ] or_out;
+
     nBit_OR #( .WIDTH( WIDTH ) ) or_instance (
         .in1( in1 ),
         .in2( in2 ),
         .out( or_out )
     );
 
-    // XOR Controller
+    // bit-serial XOR Gate
     wire [ WIDTH-1:0 ] xor_out;
+
     nBit_XOR #( .WIDTH( WIDTH ) ) xor_instance (
         .in1( in1 ),
         .in2( in2 ),
         .out( xor_out )
     );
 
-    // NOT Controller
+    // bit-serial NOT Gate
     wire [ WIDTH-1:0 ] not_out;
+    
     nBit_NOT #( .WIDTH( WIDTH ) ) not_instance (
         .in( in1 ),
         .out( not_out )
     );
 
-    // FSM logic
+    // ============== Combinational Output Multiplexer ======================
+    // Combinational case statement that selects which operation's output to forward
+    // based on the opcode input 
     always @(*) begin
-        // Initialize the output signals
+        // Defaults outputs )prevents latches)
         out_high = { WIDTH{ 1'b0 } };
         out_low = { WIDTH{ 1'b0 } };
         flag = 1'b0;
         done = 1'b0;
 
+        // Multi-cycle operations "done" signal waits for the its corresponding sub-controller to assert it
+        // Single-cycle operations ""done" signal are completed immediately
         case( opcode )
             ADD: begin
                 out_low = add_out;
@@ -271,7 +290,7 @@ module Sequential_ALU #( parameter WIDTH = 4 ) (
                 done = 1'b1;
             end
             default: begin
-                done = 1'b1;
+                done = 1'b1;    // An unsupported opcode - immediately completes
             end
         endcase
     end
@@ -280,13 +299,14 @@ endmodule
 /*
  * Addition_Control
  *
- * Purpose: Controls the addition operation
+ * Purpose:
+ * - Sequential FSM controller for bit-serial addition
  *
  * Note:
- * - The Addition_Control module is a sequential controller that controls the addition operation.
- * - The module uses the Addition_Core module to perform the addition operation.
- * - The module uses a FSM to control the addition operation.
- * - It performs its operations bit-by-bit
+ * - Utilizes state registers and a posedge clock
+ * - Performs addition one bit per clock cycle (i.e. bit-serial implementation)
+ * - States: INIT -> STEP <-> LOAD -> DONE -> INIT (cycled)
+ * - Takes WIDTH clock cycles to complete WIDTH-bit addition
  */
 module Addition_Control #( parameter WIDTH = 4 ) (
     input wire clk,
@@ -299,10 +319,11 @@ module Addition_Control #( parameter WIDTH = 4 ) (
     output reg done
 );
     // FSM states
-    localparam [ 1:0 ] INIT = 2'b00,
-                    STEP = 2'b01,
-                    LOAD = 2'b10,
-                    DONE = 2'b11;
+    localparam [ 1:0 ] 
+        INIT = 2'b00,
+        STEP = 2'b01,
+        LOAD = 2'b10,
+        DONE = 2'b11;
     reg [ 1:0 ] state;
 
     // Internal registers
@@ -325,7 +346,7 @@ module Addition_Control #( parameter WIDTH = 4 ) (
         .carry_out( carry_out )
     );
 
-    // FSM logic
+    // FSM logic - triggered by posedge clk
     always @( posedge clk or posedge reset ) begin
         if( reset ) begin
             out <= { WIDTH{ 1'b0 } };
@@ -379,13 +400,14 @@ endmodule
 /*
  * Subtraction_Control
  *
- * Purpose: Controls the subtraction operation
+ * Purpose: 
+ * - Sequential FSM controller for bit-serial subtraction
  *
  * Note:
- * - The Subtraction_Control module is a sequential controller that controls the subtraction operation.
- * - The module uses the Subtraction_Core module to perform the subtraction operation.
- * - The module uses a FSM to control the subtraction operation.
- * - It performs its operations bit-by-bit
+ * - Utilizes state registers and a posedge clock
+ * - Performs subtraction one bit per clock cycle (i.e. bit-serial implementation)
+ * - States: INIT -> STEP <-> LOAD -> DONE -> INIT (cycled)
+ * - Takes WIDTH clock cycles to complete WIDTH-bit subtraction
  */
 module Subtraction_Control #( parameter WIDTH = 4 ) (
     input wire clk,
@@ -398,10 +420,11 @@ module Subtraction_Control #( parameter WIDTH = 4 ) (
     output reg done
 );
     // FSM states
-    localparam [ 1:0 ] INIT = 2'b00,
-                    STEP = 2'b01,
-                    LOAD = 2'b10,
-                    DONE = 2'b11;
+    localparam [ 1:0 ] 
+        INIT = 2'b00,
+        STEP = 2'b01,
+        LOAD = 2'b10,
+        DONE = 2'b11;
     reg [ 1:0 ] state;
 
     // Internal registers
@@ -478,13 +501,14 @@ endmodule
  * Multiplier_Control
  *
  * Purpose: 
- * - Controls the multiplication operation
+ * - Sequential FSM controller for shift-and-add multiplication
  *
  * Note:
- * - The Multiplier_Control module is a sequential controller that controls the multiplication operation.
- * - The module uses the Multiplier_Core module to perform the multiplication operation.
- * - The module uses a FSM to control the multiplication operation.
- * - It performs its operations on inputs per clock cycle.
+ * - Utilizes state registers and a posedge clock
+ * - Performs multiplication using shift-and-add algorithm (similar to long multiplication)
+ * - States: IDLE -> INIT -> STEP (loop) -> DONE -> IDLE
+ * - Takes WIDTH clock cycles to complete WIDTH-bit multiplication
+ * - Produces a 2*WIDTH bit result, split between out_high and out_low
  */
 module Multiplier_Control #( parameter WIDTH = 4 ) (
     input wire clk,
@@ -583,13 +607,15 @@ endmodule
  * Divider_Control
 
  * Purpose: 
- * - Controls the division operation
+ * - Sequential FSM controller for restoring division
  *
  * Note:
- * - The Divider_Control module is a sequential controller that controls the division operation.
- * - The module uses the Divider_Core module to perform the division operation.
- * - The module uses a FSM to control the division operation.
- * - It performs its operations on inputs per clock cycle.
+ * - Utilizes state registers and a posedge clock
+ * - Performs division using the restoring algorithm (similar to long division)
+ * - States: IDLE -> INIT -> STEP (loop) -> DONE -> IDLE
+ * - Takes WIDTH clock cycles to complete WIDTH-bit division
+ * - Produces quotient and remainder outputs, split between out_high and out_low respectively
+ * - Handles edge cases: division by zero and dividend < divisor
  */
 module Divider_Control #( parameter WIDTH = 4 ) (
     input wire clk,

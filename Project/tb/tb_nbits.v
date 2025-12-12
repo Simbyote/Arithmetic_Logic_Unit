@@ -1,5 +1,5 @@
 /*
- * testbench_nbits.v
+ * tb_nbits.v
  * 
  * Purpose:
  * - This file contains a testbench for the n-bit arithmetic and logical modules
@@ -15,7 +15,7 @@
  */
 
 `timescale 1ns/1ns
-module testbench_nbits;
+module tb_nbits;
     parameter WIDTH = 4;    // The number of bits for the input-output
     parameter BIT_STATE = 2 ** WIDTH;   // The total possible states for the given bit WIDTH
     
@@ -98,7 +98,7 @@ module testbench_nbits;
          * - Includes all signals in the testbench_nbits module
          */
         $dumpfile( "waveform2.vcd" );
-        $dumpvars( 0, testbench_nbits );
+        $dumpvars( 0, tb_nbits );
 
         test_nBits;
 
