@@ -1,3 +1,4 @@
+`default_nettype none
 /*
  * alu_div.v
  * Contains modules for performing division operations on n-bit inputs

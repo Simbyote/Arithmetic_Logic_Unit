@@ -1,3 +1,4 @@
+`default_nettype none
 /*
  * nbit_gates.v
  * This file contains a collection of n-bit logic gates that operate on
@@ -130,8 +131,6 @@ module nBit_NOT #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in,
     output wire [ WIDTH-1:0 ] out
 );
-    // Check for valid bit-width
-    Width_Check #( .WIDTH( WIDTH ) ) width_check( );
 
     // Instantiate the corresonding operation (NOT - 0)
     Gate_Instantiator #(.WIDTH( WIDTH ), .OP( 0 ) ) not_instance (
@@ -153,8 +152,6 @@ module nBit_AND #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out
 );
-    // Check for valid bit-width
-    Width_Check #( .WIDTH( WIDTH ) ) width_check( );
 
     // Instatiate the corresponding operation (AND - 1)
     Gate_Instantiator #(.WIDTH( WIDTH ), .OP( 1 ) ) and_instance (
@@ -176,8 +173,6 @@ module nBit_OR #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out
 );
-    // Check for valid bit-width
-    Width_Check #( .WIDTH( WIDTH ) ) width_check( );
 
     // Instantiate the corresponding operation (OR - 2)
     Gate_Instantiator #(.WIDTH( WIDTH ), .OP( 2 ) ) or_instance (
@@ -199,8 +194,6 @@ module nBit_NAND #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out
 );
-    // Check for valid bit-width
-    Width_Check #( .WIDTH( WIDTH ) ) width_check( );
 
     // Instantiate the corresponding operation (NAND - 3)
     Gate_Instantiator #(.WIDTH( WIDTH ), .OP( 3 ) ) nand_instance (
@@ -222,8 +215,6 @@ module nBit_NOR #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out
 );
-    // Check for valid bit-width
-    Width_Check #( .WIDTH( WIDTH ) ) width_check( );
 
     // Instantiate the corresponding operation (NOR - 4)
     Gate_Instantiator #(.WIDTH( WIDTH ), .OP( 4 ) ) nor_instance (
@@ -245,8 +236,6 @@ module nBit_XOR #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out
 );
-    // Check for valid bit-width
-    Width_Check #( .WIDTH( WIDTH ) ) width_check( );
 
     // Instantiate the corresponding operation (XOR - 5)
     Gate_Instantiator #(.WIDTH( WIDTH ), .OP( 5 ) ) xor_instance (
@@ -268,8 +257,6 @@ module nBit_XNOR #( parameter WIDTH = 4 ) (
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out
 );
-    // Check for valid bit-width
-    Width_Check #( .WIDTH( WIDTH ) ) width_check( );
 
     // Instantiate the corresponding operation (XNOR - 6)
     Gate_Instantiator #(.WIDTH( WIDTH ), .OP( 6 ) ) xnor_instance (

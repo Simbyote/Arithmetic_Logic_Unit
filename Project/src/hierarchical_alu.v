@@ -1,3 +1,4 @@
+`default_nettype none
 /*
  * hierarchical_alu.v
  *
@@ -26,7 +27,7 @@
 
 /*
  * Hierarchical_ALU
-
+ *
  * Purpose: 
  * - Top-level combinational output selector for ALU operations
  *

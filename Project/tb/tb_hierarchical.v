@@ -1,6 +1,6 @@
 `timescale 1ns/1ns
 module tb_hierarchical;
-    parameter WIDTH = 3;    // The number of bits for the input-output
+    parameter WIDTH = 4;    // The number of bits for the input-output
     parameter BIT_STATE = 2 ** WIDTH;   // The total possible states for the given bit WIDTH
 
     reg clk, reset, start;
@@ -115,12 +115,12 @@ module tb_hierarchical;
         end
     end
 
-    // Sequential ALU Control
+    // Hierarchical ALU module
     reg [ WIDTH-1:0 ] alu_in1, alu_in2, opcode;
     wire [ WIDTH-1:0 ] alu_high, alu_low;
     wire alu_done, alu_flag;
 
-    Hierarchical_ALU #( .WIDTH( WIDTH ) ) alu_control_instance (
+    Hierarchical_ALU #( .WIDTH( WIDTH ) ) hierarchical_alu_instance (
         .clk( clk ),
         .reset( reset ),
         .start( start ),

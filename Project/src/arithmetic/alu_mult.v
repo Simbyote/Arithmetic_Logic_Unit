@@ -1,3 +1,4 @@
+`default_nettype none
 /*
  * alu_mult.v
  * Contains modules for performing multiplication on n-bit inputs

@@ -1,3 +1,4 @@
+`default_nettype none
 /*
  * alu_shift.v
  * Contains modules for performing arithmetic operations on n-bit inputs
@@ -82,8 +83,6 @@ module mXnBits_Shift #( parameter WIDTH = 4, parameter SETS = 2, parameter OP = 
     output wire [ SETS*WIDTH-1:0 ] out_packed,
     output wire [ SETS*WIDTH-1:0 ] overflow_packed
 );
-    // Check for invalid SETS
-    Set_Check #( .SETS( SETS ) ) set_check( );
 
     // Generate the shift operation based on the specified OP
     generate
@@ -174,6 +173,7 @@ module nBit_Shift #( parameter WIDTH = 4, parameter OP = 0 ) (
         end
         else begin
                 $error( "Error: Default case succeeded where it shouldn't. \n" );
+                $finish;
         end
     end
 endmodule

@@ -1,5 +1,6 @@
+`default_nettype none
 /*
- * arithmetic_operations.v
+ * alu_addsub_compare.v
  * Contains modules for performing arithmetic operations on n-bit inputs
  *
  * Purpose:
@@ -82,7 +83,7 @@ endmodule
  *   and would be updated over the course of the addition operation until a final carry-out
  *   bit is determined
  */
-module Addition_Core #( parameter WIDTH = 4 ) (
+module Addition_Core #( parameter WIDTH = 0 ) (
     input wire in1,
     input wire in2,
     input wire carry_in,
@@ -128,7 +129,7 @@ endmodule
  *   and the carry-out bit is moved to the next bit, unless it is the final bit, to which
  *   it is assigned to the final carry-out bit
  */
-module Full_Adder #( parameter WIDTH = 4 ) (
+module Full_Adder #( parameter WIDTH = 0 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out,
@@ -213,7 +214,7 @@ endmodule
  *   and would be updated over the course of the subtraction operation until a final borrow-out
  *   bit is determined
  */
-module Subtraction_Core #( parameter WIDTH = 4 ) (
+module Subtraction_Core #( parameter WIDTH = 0 ) (
     input wire in1,
     input wire in2,
     input wire borrow_in,
@@ -258,7 +259,7 @@ endmodule
  *   and the borrow-out bit is moved to the next bit, unless it is the final bit, to which
  *   it is assigned to the final borrow-out bit
  */
-module Full_Subtractor #( parameter WIDTH = 4 ) (
+module Full_Subtractor #( parameter WIDTH = 0 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
     output wire [ WIDTH-1:0 ] out,
@@ -302,7 +303,7 @@ endmodule
  * - The module uses the Full_Subtractor module to perform the comparison
  * - The final borrow bit is assigned as the output
  */
-module Less_Than #( parameter WIDTH = 4 ) (
+module Less_Than #( parameter WIDTH = 0 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
     output wire out
@@ -330,10 +331,10 @@ endmodule
  * - The module uses the Less_Than module to perform the comparison
  * - The output is the inverse of the Less_Than output
  */
-module Greater_Than #( parameter WIDTH = 4 ) (
+module Greater_Than #( parameter WIDTH = 0 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
-    output wire  out
+    output wire out
 );
     // Determine if in2 is less than in1 and assign the result to the output
     Less_Than #( .WIDTH( WIDTH ) ) less_than_instance (
@@ -353,7 +354,7 @@ endmodule
  * - The module uses the Less_Than and Greater_Than modules to perform the comparison
  * - The output is the NOR of the Less_Than and Greater_Than results
  */
-module Equal_To #( parameter WIDTH = 4) (
+module Equal_To #( parameter WIDTH = 0) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
     output wire out

@@ -1,3 +1,4 @@
+`default_nettype none
 /*
  * bit_gates.v
  * This file contains the fundamental and derived logic gates
