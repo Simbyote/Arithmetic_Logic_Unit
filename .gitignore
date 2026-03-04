@@ -1,6 +1,6 @@
 # Ignore the output directories
-Project/docs/Latex_1/output/
-Project/docs/Latex_2/output/
-Project/docs/Latex_3/output/
+Project/docs/latex_1/output/
+Project/docs/latex_2/output/
+Project/docs/latex_3/output/
 Project/out/
 

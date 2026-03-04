@@ -14,7 +14,6 @@
  * - The simulation generates a VCD file named `waveform1.vcd` for visualization
  */
 
-
 `timescale 1ns/1ns
 module tb_bit;
     /*

@@ -46,7 +46,7 @@
  *   that are then processed based on the specified operation. The results are
  *   repacked into a single output
  */
-module mXnBit_UnpackPack #( parameter WIDTH = 4, parameter SETS = 2, parameter OP = 0 ) (
+module mXnBit_UnpackPack #( parameter WIDTH, parameter SETS, parameter OP = 0 ) (
     input wire [ SETS*WIDTH-1:0 ] in1_packed,
     input wire [ SETS*WIDTH-1:0 ] in2_packed,
     output wire [ SETS*WIDTH-1:0 ] out_packed
@@ -55,7 +55,8 @@ module mXnBit_UnpackPack #( parameter WIDTH = 4, parameter SETS = 2, parameter O
     generate
         if( OP < 0 || OP > 6 ) begin
             initial begin
-                $error( "Error: Invalid OP value (%0d). Must be between 0 and 6", OP );
+                $error(1,
+                    "Error: Invalid OP value (%0d). Must be between 0 and 6", OP );
             end
         end
     endgenerate
@@ -132,7 +133,7 @@ endmodule
  * - Wraps with the mXnBits_UnpackPack module to perform the NOT operation
  *   on multiple sets of n-bit inputs
  */
-module mXnBit_NOT #( parameter WIDTH = 4, parameter SETS = 2 ) (
+module mXnBit_NOT #( parameter WIDTH, parameter SETS ) (
     input wire [ SETS*WIDTH-1:0 ] in_packed,
     output wire [ SETS*WIDTH-1:0 ] out_packed
 );  
@@ -151,7 +152,7 @@ endmodule
  * - Wraps with the mXnBits_UnpackPack module to perform the AND operation
  *   on multiple sets of n-bit inputs
  */
-module mXnBit_AND #( parameter WIDTH = 4, parameter SETS = 2 ) (
+module mXnBit_AND #( parameter WIDTH, parameter SETS ) (
     input wire [ SETS*WIDTH-1:0 ] in1_packed,
     input wire [ SETS*WIDTH-1:0 ] in2_packed,
     output wire [ SETS*WIDTH-1:0 ] out_packed
@@ -172,7 +173,7 @@ endmodule
  * - Wraps with the mXnBits_UnpackPack module to perform the OR operation
  *   on multiple sets of n-bit inputs
  */
-module mXnBit_OR #( parameter WIDTH = 4, parameter SETS = 2 ) (
+module mXnBit_OR #( parameter WIDTH, parameter SETS ) (
     input wire [ SETS*WIDTH-1:0 ] in1_packed,
     input wire [ SETS*WIDTH-1:0 ] in2_packed,
     output wire [ SETS*WIDTH-1:0 ] out_packed
@@ -193,7 +194,7 @@ endmodule
  * - Wraps with the mXnBits_UnpackPack module to perform the NAND operation
  *   on multiple sets of n-bit inputs
  */
-module mXnBit_NAND #( parameter WIDTH = 4, parameter SETS = 2 ) (
+module mXnBit_NAND #( parameter WIDTH, parameter SETS ) (
     input wire [ SETS*WIDTH-1:0 ] in1_packed,
     input wire [ SETS*WIDTH-1:0 ] in2_packed,
     output wire [ SETS*WIDTH-1:0 ] out_packed
@@ -214,7 +215,7 @@ endmodule
  * - Wraps with the mXnBits_UnpackPack module to perform the NOR operation
  *   on multiple sets of n-bit inputs
  */
-module mXnBit_NOR #( parameter WIDTH = 4, parameter SETS = 2 ) (
+module mXnBit_NOR #( parameter WIDTH, parameter SETS ) (
     input wire [ SETS*WIDTH-1:0 ] in1_packed,
     input wire [ SETS*WIDTH-1:0 ] in2_packed,
     output wire [ SETS*WIDTH-1:0 ] out_packed
@@ -235,7 +236,7 @@ endmodule
  * - Wraps with the mXnBits_UnpackPack module to perform the XOR operation
  *   on multiple sets of n-bit inputs
  */
-module mXnBit_XOR #( parameter WIDTH = 4, parameter SETS = 2 ) (
+module mXnBit_XOR #( parameter WIDTH, parameter SETS ) (
     input wire [ SETS*WIDTH-1:0 ] in1_packed,
     input wire [ SETS*WIDTH-1:0 ] in2_packed,
     output wire [ SETS*WIDTH-1:0 ] out_packed
@@ -256,7 +257,7 @@ endmodule
  * - Wraps with the mXnBits_UnpackPack module to perform the XNOR operation
  *   on multiple sets of n-bit inputs
  */
-module mXnBit_XNOR #( parameter WIDTH = 4, parameter SETS = 2 ) (
+module mXnBit_XNOR #( parameter WIDTH, parameter SETS ) (
     input wire [ SETS*WIDTH-1:0 ] in1_packed,
     input wire [ SETS*WIDTH-1:0 ] in2_packed,
     output wire [ SETS*WIDTH-1:0 ] out_packed

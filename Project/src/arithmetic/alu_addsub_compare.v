@@ -221,31 +221,40 @@ module Subtraction_Core #( parameter WIDTH = 0 ) (
     output wire out,
     output wire borrow_out
 );
-    // Internal wires
-    wire temp_out, temp_borrow_out, borrow_overflow;
+    generate
+        if( ( WIDTH <= 0 ) || ( WIDTH > 256 ) ) begin:  width_error
+            initial begin
+                $fatal(1,
+                "Error: Invalid WIDTH value (%0d). Must be between 1 and 256", WIDTH );
+            end
+        end else begin: width_valid
+            // Internal wires
+            wire temp_out, temp_borrow_out, borrow_overflow;
 
-    // Subtract the inputs and store the output
-    Half_Subtractor input_subtractor_instance (
-        .in1( in1 ),
-        .in2( in2 ),
-        .out( temp_out ),
-        .borrow_out( temp_borrow_out )
-    );
+            // Subtract the inputs and store the output
+            Half_Subtractor input_subtractor_instance (
+                .in1( in1 ),
+                .in2( in2 ),
+                .out( temp_out ),
+                .borrow_out( temp_borrow_out )
+            );
 
-    // Subtract the borrow
-    Half_Subtractor borrow_subtractor_instance (
-        .in1( temp_out ),
-        .in2( borrow_in ),
-        .out( out ),
-        .borrow_out( borrow_overflow )
-    );
+            // Subtract the borrow
+            Half_Subtractor borrow_subtractor_instance (
+                .in1( temp_out ),
+                .in2( borrow_in ),
+                .out( out ),
+                .borrow_out( borrow_overflow )
+            );
 
-    // Determine the final borrow
-    OR or_instance (
-        .in1( temp_borrow_out ),
-        .in2( borrow_overflow ),
-        .out( borrow_out )
-    );
+            // Determine the final borrow
+            OR or_instance (
+                .in1( temp_borrow_out ),
+                .in2( borrow_overflow ),
+                .out( borrow_out )
+            );
+        end
+    endgenerate
 endmodule
 
 /*
@@ -265,29 +274,37 @@ module Full_Subtractor #( parameter WIDTH = 0 ) (
     output wire [ WIDTH-1:0 ] out,
     output wire final_borrow
 );
-    // Internal borrow wires
-    wire [ WIDTH-1:0 ] borrow_in, borrow_out;
-    assign borrow_in[ 0 ] = 1'b0;
-
-    genvar i;
     generate
-        for( i = 0; i < WIDTH; i = i + 1 ) begin : subtraction_loop
-
-            // Subtract the bits and store the outputs
-            Subtraction_Core #( .WIDTH( WIDTH ) ) subtractor_instance (
-                .in1( in1[ i ] ),
-                .in2( in2[ i ] ),
-                .borrow_in( borrow_in[ i ] ),
-                .out( out[ i ] ),
-                .borrow_out( borrow_out[ i ] )
-            );
-
-            // Sets up the next borrow or the final borrow
-            if( i < WIDTH - 1 ) begin
-                assign borrow_in[ i + 1 ] = borrow_out[ i ];
+        if( ( WIDTH <= 0 ) || ( WIDTH > 256 ) ) begin:  width_error
+            initial begin
+                $fatal(1,
+                "Error: Invalid WIDTH value (%0d). Must be between 1 and 256", WIDTH );
             end
-            else begin
-                assign final_borrow = borrow_out[ i ];
+        end else begin: width_valid
+            // Internal borrow wires
+            wire [ WIDTH-1:0 ] borrow_in, borrow_out;
+            assign borrow_in[ 0 ] = 1'b0;
+
+            // Begin subtraction operation
+            genvar i;
+            for( i = 0; i < WIDTH; i = i + 1 ) begin : subtraction_loop
+
+                // Subtract the bits and store the outputs
+                Subtraction_Core #( .WIDTH( WIDTH ) ) subtractor_instance (
+                    .in1( in1[ i ] ),
+                    .in2( in2[ i ] ),
+                    .borrow_in( borrow_in[ i ] ),
+                    .out( out[ i ] ),
+                    .borrow_out( borrow_out[ i ] )
+                );
+
+                // Sets up the next borrow or the final borrow
+                if( i < WIDTH - 1 ) begin
+                    assign borrow_in[ i + 1 ] = borrow_out[ i ];
+                end
+                else begin
+                    assign final_borrow = borrow_out[ i ];
+                end
             end
         end
     endgenerate
@@ -308,17 +325,26 @@ module Less_Than #( parameter WIDTH = 0 ) (
     input wire [ WIDTH-1:0 ] in2,
     output wire out
 );
-    // Internal subtractor wires
-    wire [ WIDTH-1:0 ] subtractor_result;
-    wire final_borrow;
+    generate
+        if( ( WIDTH <= 0 ) || ( WIDTH > 256 ) ) begin:  width_error
+            initial begin
+                $fatal(1,
+                "Error: Invalid WIDTH value (%0d). Must be between 1 and 256", WIDTH );
+            end
+        end else begin: width_valid
+            // Internal subtractor wires
+            wire [ WIDTH-1:0 ] subtractor_result;
+            wire final_borrow;
 
-    // Subtract the inputs and assign the final borrow to the output
-    Full_Subtractor #( .WIDTH( WIDTH ) ) subtractor_instance (
-        .in1( in1 ),
-        .in2( in2 ),
-        .out( subtractor_result ),
-        .final_borrow( out )
-    );
+            // Subtract the inputs and assign the final borrow to the output
+            Full_Subtractor #( .WIDTH( WIDTH ) ) subtractor_instance (
+                .in1( in1 ),
+                .in2( in2 ),
+                .out( subtractor_result ),
+                .final_borrow( out )
+            );
+        end
+    endgenerate
 endmodule
 
 /*
@@ -336,12 +362,21 @@ module Greater_Than #( parameter WIDTH = 0 ) (
     input wire [ WIDTH-1:0 ] in2,
     output wire out
 );
-    // Determine if in2 is less than in1 and assign the result to the output
-    Less_Than #( .WIDTH( WIDTH ) ) less_than_instance (
-        .in1( in2 ),
-        .in2( in1 ),
-        .out( out )
-    );
+    generate
+        if( ( WIDTH <= 0 ) || ( WIDTH > 256 ) ) begin:  width_error
+            initial begin
+                $fatal(1,
+                "Error: Invalid WIDTH value (%0d). Must be between 1 and 256", WIDTH );
+            end
+        end else begin: width_valid
+            // Determine if in2 is less than in1 and assign the result to the output
+            Less_Than #( .WIDTH( WIDTH ) ) less_than_instance (
+                .in1( in2 ),
+                .in2( in1 ),
+                .out( out )
+            );
+        end
+    endgenerate
 endmodule
 
 /*
@@ -354,33 +389,41 @@ endmodule
  * - The module uses the Less_Than and Greater_Than modules to perform the comparison
  * - The output is the NOR of the Less_Than and Greater_Than results
  */
-module Equal_To #( parameter WIDTH = 0) (
+module Equal_To #( parameter WIDTH = 0 ) (
     input wire [ WIDTH-1:0 ] in1,
     input wire [ WIDTH-1:0 ] in2,
     output wire out
 );
-    // Internal wires
-    wire less_than_result, greater_than_result; 
-    wire final_borrow;
+    generate
+        if( ( WIDTH <= 0 ) || ( WIDTH > 256 ) ) begin:  width_error
+            initial begin
+                $fatal(1,
+                "Error: Invalid WIDTH value (%0d). Must be between 1 and 256", WIDTH );
+            end
+        end else begin: width_valid
+            // Internal wires
+            wire less_than_result, greater_than_result;
 
-    // Determine if in1 is less than in2
-    Less_Than #( .WIDTH( WIDTH ) ) less_than_instance (
-        .in1( in1 ),
-        .in2( in2 ),
-        .out( less_than_result )
-    );
+            // Determine if in1 is less than in2
+            Less_Than #( .WIDTH( WIDTH ) ) less_than_instance (
+                .in1( in1 ),
+                .in2( in2 ),
+                .out( less_than_result )
+            );
 
-    // Determine if in1 is greater than in2
-    Greater_Than #( .WIDTH( WIDTH ) ) greater_than_instance (
-        .in1( in1 ),
-        .in2( in2 ),
-        .out( greater_than_result )
-    );
+            // Determine if in1 is greater than in2
+            Greater_Than #( .WIDTH( WIDTH ) ) greater_than_instance (
+                .in1( in1 ),
+                .in2( in2 ),
+                .out( greater_than_result )
+            );
 
-    // Determine if in1 is equal to in2
-    NOR nor_instance (
-        .in1( less_than_result ),
-        .in2( greater_than_result ),
-        .out( out )
-    );    
+            // Determine if in1 is equal to in2
+            NOR nor_instance (
+                .in1( less_than_result ),
+                .in2( greater_than_result ),
+                .out( out )
+            );
+        end
+    endgenerate
 endmodule
